@@ -3,13 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Eggpoint — B2B egg supplier directory API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: farms
+    description: Farm profiles
+  - name: batches
+    description: Egg batches
+  - name: inquiries
+    description: Buyer inquiries
+  - name: listings
+    description: Marketplace listings (enriched batches)
+  - name: admin
+    description: Admin operations
+  - name: stats
+    description: Platform statistics
+
 paths:
   /healthz:
     get:
@@ -24,6 +39,512 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSession"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSession"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSession"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /farms:
+    get:
+      operationId: listFarms
+      tags: [farms]
+      summary: List verified farms
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of farms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Farm"
+    post:
+      operationId: createFarm
+      tags: [farms]
+      summary: Register as a supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FarmInput"
+      responses:
+        "201":
+          description: Farm created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Farm"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /farms/{farmCode}:
+    get:
+      operationId: getFarm
+      tags: [farms]
+      summary: Get farm profile
+      parameters:
+        - name: farmCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Farm profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Farm"
+        "404":
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateFarm
+      tags: [farms]
+      summary: Update farm profile
+      parameters:
+        - name: farmCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FarmUpdate"
+      responses:
+        "200":
+          description: Updated farm
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Farm"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /batches:
+    get:
+      operationId: listBatches
+      tags: [batches]
+      summary: List egg batches
+      parameters:
+        - name: farmCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: eggSize
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EggBatch"
+    post:
+      operationId: createBatch
+      tags: [batches]
+      summary: Create an egg batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EggBatchInput"
+      responses:
+        "201":
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EggBatch"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /batches/{batchCode}:
+    get:
+      operationId: getBatch
+      tags: [batches]
+      summary: Get batch detail
+      parameters:
+        - name: batchCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Batch detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EggBatch"
+        "404":
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateBatch
+      tags: [batches]
+      summary: Update batch (status, price, quantity)
+      parameters:
+        - name: batchCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EggBatchUpdate"
+      responses:
+        "200":
+          description: Updated batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EggBatch"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /listings:
+    get:
+      operationId: listListings
+      tags: [listings]
+      summary: Marketplace — active batches with farm info
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: eggSize
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: minCrates
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Active listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+
+  /inquiries:
+    get:
+      operationId: listInquiries
+      tags: [inquiries]
+      summary: Get inquiries for current seller's farm
+      responses:
+        "200":
+          description: Inquiries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inquiry"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createInquiry
+      tags: [inquiries]
+      summary: Send an inquiry to a supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InquiryInput"
+      responses:
+        "201":
+          description: Inquiry sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inquiry"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inquiries/{id}:
+    patch:
+      operationId: updateInquiry
+      tags: [inquiries]
+      summary: Update inquiry status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InquiryUpdate"
+      responses:
+        "200":
+          description: Updated inquiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inquiry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/farms:
+    get:
+      operationId: listPendingFarms
+      tags: [admin]
+      summary: List farms pending verification
+      responses:
+        "200":
+          description: Pending farms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Farm"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/farms/{farmCode}/verify:
+    patch:
+      operationId: verifyFarm
+      tags: [admin]
+      summary: Approve or reject a farm
+      parameters:
+        - name: farmCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyFarmInput"
+      responses:
+        "200":
+          description: Farm verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Farm"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Platform-wide statistics
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +555,299 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    UserSession:
+      type: object
+      required: [id, email, fullName, role]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [SELLER, BUYER, ADMIN]
+        farmCode:
+          type: ["string", "null"]
+
+    RegisterInput:
+      type: object
+      required: [email, fullName, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        fullName:
+          type: string
+          minLength: 2
+        password:
+          type: string
+          minLength: 6
+        role:
+          type: string
+          enum: [SELLER, BUYER]
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    Farm:
+      type: object
+      required: [id, farmCode, farmName, state, lga, verified, subscriptionTier, createdAt]
+      properties:
+        id:
+          type: integer
+        farmCode:
+          type: string
+        ownerId:
+          type: integer
+        ownerName:
+          type: ["string", "null"]
+        ownerPhone:
+          type: ["string", "null"]
+        farmName:
+          type: string
+        state:
+          type: string
+        lga:
+          type: string
+        description:
+          type: ["string", "null"]
+        verified:
+          type: boolean
+        subscriptionTier:
+          type: string
+          enum: [FREE, FEATURED]
+        activeBatchCount:
+          type: integer
+        totalCratesAvailable:
+          type: integer
+        createdAt:
+          type: string
+
+    FarmInput:
+      type: object
+      required: [farmName, state, lga]
+      properties:
+        farmName:
+          type: string
+          minLength: 2
+        state:
+          type: string
+        lga:
+          type: string
+        description:
+          type: string
+
+    FarmUpdate:
+      type: object
+      properties:
+        farmName:
+          type: string
+          minLength: 2
+        lga:
+          type: string
+        description:
+          type: string
+
+    EggBatch:
+      type: object
+      required: [id, batchCode, farmId, farmCode, farmName, quantityCrates, eggSize, pricePerCrate, collectionDate, status, daysOld, createdAt]
+      properties:
+        id:
+          type: integer
+        batchCode:
+          type: string
+        farmId:
+          type: integer
+        farmCode:
+          type: string
+        farmName:
+          type: string
+        farmState:
+          type: string
+        quantityCrates:
+          type: integer
+        eggSize:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE, JUMBO]
+        pricePerCrate:
+          type: number
+        collectionDate:
+          type: string
+        daysOld:
+          type: integer
+        status:
+          type: string
+          enum: [ACTIVE, RESERVED, SOLD_OUT, ARCHIVED]
+        createdAt:
+          type: string
+
+    EggBatchInput:
+      type: object
+      required: [farmCode, quantityCrates, eggSize, pricePerCrate, collectionDate]
+      properties:
+        farmCode:
+          type: string
+        quantityCrates:
+          type: integer
+          minimum: 1
+        eggSize:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE, JUMBO]
+        pricePerCrate:
+          type: number
+          minimum: 1
+        collectionDate:
+          type: string
+
+    EggBatchUpdate:
+      type: object
+      properties:
+        quantityCrates:
+          type: integer
+          minimum: 1
+        pricePerCrate:
+          type: number
+          minimum: 1
+        status:
+          type: string
+          enum: [ACTIVE, RESERVED, SOLD_OUT, ARCHIVED]
+
+    Listing:
+      type: object
+      required: [batchCode, farmCode, farmName, state, lga, eggSize, quantityCrates, pricePerCrate, collectionDate, daysOld, verified, ownerPhone]
+      properties:
+        batchCode:
+          type: string
+        farmCode:
+          type: string
+        farmName:
+          type: string
+        state:
+          type: string
+        lga:
+          type: string
+        description:
+          type: ["string", "null"]
+        eggSize:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE, JUMBO]
+        quantityCrates:
+          type: integer
+        pricePerCrate:
+          type: number
+        collectionDate:
+          type: string
+        daysOld:
+          type: integer
+        verified:
+          type: boolean
+        ownerPhone:
+          type: ["string", "null"]
+        ownerName:
+          type: ["string", "null"]
+        subscriptionTier:
+          type: string
+          enum: [FREE, FEATURED]
+
+    Inquiry:
+      type: object
+      required: [id, buyerName, buyerPhone, farmCode, batchCode, quantityCrates, message, status, createdAt]
+      properties:
+        id:
+          type: integer
+        buyerName:
+          type: string
+        buyerPhone:
+          type: string
+        farmCode:
+          type: string
+        batchCode:
+          type: string
+        quantityCrates:
+          type: integer
+        message:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, RESPONDED, CLOSED]
+        createdAt:
+          type: string
+
+    InquiryInput:
+      type: object
+      required: [buyerName, buyerPhone, farmCode, batchCode, quantityCrates, message]
+      properties:
+        buyerName:
+          type: string
+          minLength: 2
+        buyerPhone:
+          type: string
+          minLength: 7
+        farmCode:
+          type: string
+        batchCode:
+          type: string
+        quantityCrates:
+          type: integer
+          minimum: 1
+        message:
+          type: string
+          minLength: 10
+
+    InquiryUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, RESPONDED, CLOSED]
+
+    VerifyFarmInput:
+      type: object
+      required: [verified]
+      properties:
+        verified:
+          type: boolean
+
+    PlatformStats:
+      type: object
+      required: [totalFarms, verifiedFarms, totalCratesAvailable, statesCovered, totalInquiries, totalBatches]
+      properties:
+        totalFarms:
+          type: integer
+        verifiedFarms:
+          type: integer
+        totalCratesAvailable:
+          type: integer
+        statesCovered:
+          type: integer
+        totalInquiries:
+          type: integer
+        totalBatches:
+          type: integer
