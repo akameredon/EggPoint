@@ -1,0 +1,1225 @@
+# 🥚 Eggpoint  — Full MVP App Architecture
+
+Forget features for a moment.
+
+The question is:
+
+> **What is the shortest path from egg production to money?**
+
+Every screen must support that mission.
+
+---
+
+# SYSTEM ACTORS
+
+There are only 5 users initially:
+
+| User        | Role             |
+| ----------- | ---------------- |
+| Farmer      | Creates supply   |
+| Aggregator  | Moves supply     |
+| Agent/Kiosk | Sells supply     |
+| Buyer       | Creates demand   |
+| Admin       | Controls network |
+
+---
+
+# APP STRUCTURE
+
+Instead of 5 separate apps:
+
+### One App
+
+Users select role during onboarding.
+
+```text
+EggLoop OS
+
+├── Farmer Mode
+├── Aggregator Mode
+├── Agent/Kiosk Mode
+├── Buyer Mode
+└── Admin Mode
+```
+
+A user can have multiple roles.
+
+Example:
+
+```text
+Farmer + Buyer
+Aggregator + Agent
+```
+
+---
+
+# SCREEN 1
+
+## Splash Screen
+
+```text
+LOGO
+
+Move Eggs Faster.
+Sell With Trust.
+
+[ Get Started ]
+```
+
+---
+
+# SCREEN 2
+
+## Login
+
+```text
+Phone Number
+
+[Continue]
+
+OTP Verification
+```
+
+Nigeria-friendly.
+
+No email.
+
+---
+
+# SCREEN 3
+
+## Choose Role
+
+```text
+I Produce Eggs
+(Farmer)
+
+I Move Eggs
+(Aggregator)
+
+I Sell Eggs
+(Agent/Kiosk)
+
+I Buy Eggs
+(Buyer)
+```
+
+---
+
+# FARMER FLOW
+
+---
+
+# SCREEN 4
+
+## Farmer Dashboard
+
+```text
+Good Morning Chibuike
+
+Available Stock
+240 Crates
+
+Pending Orders
+12
+
+Revenue Today
+₦85,000
+
+[Create Batch]
+```
+
+---
+
+# SCREEN 5
+
+## Create Egg Batch
+
+Farmer enters:
+
+```text
+Collection Date
+
+Number of Crates
+
+Egg Size
+
+Small
+Medium
+Large
+
+[Generate Batch]
+```
+
+System creates:
+
+```text
+Batch ID
+
+EG-240608-001
+```
+
+---
+
+# SCREEN 6
+
+## Batch Detail
+
+```text
+Batch ID
+
+Freshness Score
+
+Available Quantity
+
+QR Code
+```
+
+Buttons:
+
+```text
+Post for Sale
+Download QR
+Print QR
+```
+
+---
+
+# SCREEN 7
+
+## Marketplace Listing
+
+```text
+Price Per Crate
+
+Minimum Order
+
+Location
+
+Publish
+```
+
+Now buyers can see it.
+
+---
+
+# AGGREGATOR FLOW
+
+---
+
+# SCREEN 8
+
+## Nearby Supply
+
+Map/List
+
+```text
+Farm A
+
+30 Crates
+
+2km
+
+₦6,000
+```
+
+```text
+Farm B
+
+80 Crates
+
+5km
+```
+
+---
+
+# SCREEN 9
+
+## Accept Pickup
+
+```text
+Pickup Location
+
+Dropoff Location
+
+Estimated Earnings
+
+₦3,500
+
+[Accept]
+```
+
+---
+
+# SCREEN 10
+
+## QR Pickup Verification
+
+Aggregator scans:
+
+```text
+Batch QR
+```
+
+System records:
+
+```text
+Picked Up
+Time
+GPS
+Aggregator ID
+```
+
+Chain of custody begins.
+
+---
+
+# SCREEN 11
+
+## Delivery Confirmation
+
+At destination:
+
+```text
+Scan Batch
+
+Delivered
+```
+
+Aggregator gets paid.
+
+---
+
+# AGENT / KIOSK FLOW
+
+This is where Moniepoint-like scale happens.
+
+Thousands of roadside kiosks.
+
+---
+
+# SCREEN 12
+
+## Kiosk Dashboard
+
+```text
+Inventory
+
+75 Crates
+
+Today's Sales
+
+₦55,000
+
+Commission Earned
+
+₦4,300
+```
+
+---
+
+# SCREEN 13
+
+## Receive Stock
+
+Scan incoming QR.
+
+```text
+Batch Verified
+
+Farm:
+GreenNest Farms
+
+Freshness:
+96%
+```
+
+---
+
+# SCREEN 14
+
+## Sell Crates
+
+```text
+Quantity Sold
+
+Buyer Name (Optional)
+
+Complete Sale
+```
+
+Inventory updates automatically.
+
+---
+
+# BUYER FLOW
+
+Most important growth engine.
+
+---
+
+# SCREEN 15
+
+## Search
+
+Top search bar.
+
+Voice enabled.
+
+```text
+🔍 What are you looking for?
+
+"30 crates"
+
+"Fresh eggs"
+
+"Nearby kiosk"
+```
+
+---
+
+# SCREEN 16
+
+## Search Results
+
+```text
+GreenNest Farms
+
+Freshness 98%
+
+₦6,200/crate
+
+3km away
+```
+
+```text
+Premium Farm Eggs
+
+₦6,400/crate
+
+5km away
+```
+
+---
+
+# SCREEN 17
+
+## Product Page
+
+```text
+Farm Name
+
+Farm ID
+
+Freshness
+
+Date Collected
+
+Available Quantity
+```
+
+Buttons:
+
+```text
+Order Now
+
+Chat Seller
+
+Reserve Stock
+```
+
+---
+
+# SCREEN 18
+
+## QR Verification Screen
+
+Consumer scans carton.
+
+Sees:
+
+```text
+Farm ID
+
+Date Collected
+
+Date Packed
+
+Movement History
+
+Freshness Score
+```
+
+This is the TRUST ENGINE.
+
+---
+
+# TRUST SYSTEM
+
+Every batch generates:
+
+```text
+Farm ID
+Batch ID
+Timestamp
+GPS
+Owner
+```
+
+History:
+
+```text
+Created
+Picked Up
+Delivered
+Received
+Sold
+```
+
+Nothing fancy.
+
+Simple.
+
+Powerful.
+
+---
+
+# ADMIN FLOW
+
+---
+
+# SCREEN 19
+
+## Control Center
+
+Admin sees:
+
+```text
+Total Farms
+
+Total Eggs
+
+Total Orders
+
+Active Aggregators
+
+Active Agents
+```
+
+---
+
+# SCREEN 20
+
+## Farm Verification
+
+Approve farms.
+
+```text
+Approve
+Reject
+Request Info
+```
+
+---
+
+# SCREEN 21
+
+## Fraud Monitoring
+
+Flags:
+
+```text
+Duplicate QR
+
+Fake Batch
+
+Suspicious Activity
+```
+
+---
+
+# SCREEN 22
+
+## Network Heatmap
+
+See:
+
+```text
+Supply Zones
+
+Demand Zones
+
+Price Zones
+```
+
+This becomes your intelligence layer.
+
+---
+
+# MONIEPOINT-STYLE REVENUE MODEL
+
+Do not charge farmers immediately.
+
+That's where many startups die.
+
+---
+
+## Revenue Stream 1
+
+Transaction Fee
+
+```text
+1–2% per completed sale
+```
+
+---
+
+## Revenue Stream 2
+
+Aggregator Commission Spread
+
+```text
+Platform Fee
+```
+
+Per delivery.
+
+---
+
+## Revenue Stream 3
+
+Agent Float
+
+Large kiosks maintain wallet balances.
+
+Just like POS agents.
+
+---
+
+## Revenue Stream 4
+
+Featured Listings
+
+Farmers pay for visibility.
+
+Later.
+
+---
+
+## Revenue Stream 5
+
+Farm Analytics Subscription
+
+Premium dashboard.
+
+Later.
+
+---
+
+# THE REAL MVP
+
+If I were building this tomorrow with a small team, I would launch with only:
+
+### Farmer
+
+### Buyer
+
+### QR Trust System
+
+That's it.
+
+No logistics.
+
+No kiosks.
+
+No AI.
+
+No hardware.
+
+No SEO ranking.
+
+No visibility marketplace.
+
+Just:
+
+```text
+Create Batch
+
+Generate QR
+
+List Eggs
+
+Search Eggs
+
+Buy Eggs
+```
+
+If that works, everything else can be added.
+
+Because the hardest thing in marketplaces is not software.
+
+It's getting supply and demand to meet repeatedly.
+
+And your Farm ID + Batch QR + Searchable Marketplace is the smallest version of the vision that can prove the entire business.
+
+
+
+
+
+
+
+
+
+# 🥚 EggLoop OS — Database & Backend Architecture (Farm ID + QR Trust System)
+
+The biggest mistake would be trying to build this like a normal e-commerce app.
+
+You are not selling eggs.
+
+You are building a **Trust Ledger for Food Movement**.
+
+The database should answer one question:
+
+> **"Where did this egg come from, who touched it, and where is it now?"**
+
+Everything else is secondary.
+
+---
+
+# SYSTEM ARCHITECTURE
+
+```text
+Mobile App
+     │
+     ▼
+API Gateway
+     │
+     ▼
+Backend Services
+     │
+ ┌───┼────┐
+ │   │    │
+ ▼   ▼    ▼
+Auth Service
+Farm Service
+Batch Service
+
+ ▼
+Movement Service
+
+ ▼
+Marketplace Service
+
+ ▼
+Trust Service
+
+ ▼
+Notification Service
+
+     │
+     ▼
+PostgreSQL
+```
+
+For MVP:
+
+### Backend
+
+* Node.js
+* NestJS
+* PostgreSQL
+
+or
+
+* Supabase (faster MVP)
+
+I'd start with Supabase.
+
+---
+
+# CORE DATABASE TABLES
+
+Only build what you need.
+
+---
+
+# 1. USERS TABLE
+
+```sql
+users
+```
+
+| Field      | Type      |
+| ---------- | --------- |
+| id         | uuid      |
+| phone      | varchar   |
+| full_name  | varchar   |
+| role       | enum      |
+| created_at | timestamp |
+
+Example:
+
+```text
+USR_001
+080xxxxxxxx
+John Farmer
+FARMER
+```
+
+---
+
+# 2. FARMS TABLE
+
+This creates Farm ID.
+
+```sql
+farms
+```
+
+| Field     | Type    |
+| --------- | ------- |
+| id        | uuid    |
+| farm_id   | varchar |
+| owner_id  | uuid    |
+| farm_name | varchar |
+| state     | varchar |
+| lga       | varchar |
+| gps_lat   | decimal |
+| gps_lng   | decimal |
+| verified  | boolean |
+
+---
+
+Example
+
+```text
+farm_id
+
+RIV-PHC-0001
+```
+
+Meaning:
+
+```text
+State
+City
+Farm Number
+```
+
+---
+
+Generated automatically.
+
+---
+
+# 3. BATCH TABLE
+
+Most important table.
+
+Every egg movement starts here.
+
+```sql
+egg_batches
+```
+
+| Field           | Type    |
+| --------------- | ------- |
+| id              | uuid    |
+| batch_id        | varchar |
+| farm_id         | uuid    |
+| quantity_crates | integer |
+| eggs_per_crate  | integer |
+| collection_date | date    |
+| freshness_score | integer |
+| status          | varchar |
+| qr_code         | text    |
+
+---
+
+Example:
+
+```text
+BATCH
+
+EG2406080001
+```
+
+Meaning:
+
+```text
+EG
+Date
+Sequence
+```
+
+---
+
+# 4. QR TABLE
+
+Stores QR references.
+
+```sql
+qr_codes
+```
+
+| Field        | Type      |
+| ------------ | --------- |
+| id           | uuid      |
+| batch_id     | uuid      |
+| qr_hash      | text      |
+| generated_at | timestamp |
+
+---
+
+QR does NOT store data.
+
+QR stores:
+
+```text
+https://eggloop.app/b/EG2406080001
+```
+
+or
+
+```text
+batch_uuid
+```
+
+Backend fetches details.
+
+This keeps QR small and secure.
+
+---
+
+# 5. MOVEMENT TABLE
+
+This is your secret weapon.
+
+Tracks custody.
+
+```sql
+batch_movements
+```
+
+| Field     | Type      |
+| --------- | --------- |
+| id        | uuid      |
+| batch_id  | uuid      |
+| actor_id  | uuid      |
+| action    | varchar   |
+| location  | text      |
+| timestamp | timestamp |
+
+---
+
+Example:
+
+```text
+CREATED
+
+PICKED_UP
+
+DELIVERED
+
+RECEIVED
+
+SOLD
+```
+
+---
+
+Movement history:
+
+```text
+Farm Created Batch
+
+Aggregator Picked Up
+
+Hub Received
+
+Agent Received
+
+Consumer Purchased
+```
+
+---
+
+This becomes the trust ledger.
+
+---
+
+# 6. MARKETPLACE LISTINGS
+
+```sql
+listings
+```
+
+| Field              | Type    |
+| ------------------ | ------- |
+| id                 | uuid    |
+| batch_id           | uuid    |
+| seller_id          | uuid    |
+| price_per_crate    | decimal |
+| available_quantity | integer |
+| status             | varchar |
+
+---
+
+Example
+
+```text
+ACTIVE
+
+RESERVED
+
+SOLD_OUT
+```
+
+---
+
+# 7. ORDERS TABLE
+
+```sql
+orders
+```
+
+| Field      | Type    |
+| ---------- | ------- |
+| id         | uuid    |
+| buyer_id   | uuid    |
+| listing_id | uuid    |
+| quantity   | integer |
+| amount     | decimal |
+| status     | varchar |
+
+---
+
+Statuses
+
+```text
+PENDING
+
+CONFIRMED
+
+IN_TRANSIT
+
+DELIVERED
+```
+
+---
+
+# 8. AGGREGATORS TABLE
+
+```sql
+aggregators
+```
+
+| Field          | Type    |
+| -------------- | ------- |
+| id             | uuid    |
+| user_id        | uuid    |
+| rating         | decimal |
+| completed_jobs | integer |
+
+---
+
+# 9. DELIVERY JOBS TABLE
+
+```sql
+delivery_jobs
+```
+
+| Field            | Type    |
+| ---------------- | ------- |
+| id               | uuid    |
+| batch_id         | uuid    |
+| aggregator_id    | uuid    |
+| pickup_location  | text    |
+| dropoff_location | text    |
+| fee              | decimal |
+| status           | varchar |
+
+---
+
+# HOW QR SYSTEM WORKS
+
+Farmer creates batch.
+
+```text
+100 crates
+```
+
+System creates:
+
+```text
+Farm ID
+
+RIV-PHC-0001
+```
+
+and
+
+```text
+Batch ID
+
+EG2406080001
+```
+
+---
+
+Backend generates:
+
+```text
+QR_URL
+
+eggloop.app/b/EG2406080001
+```
+
+---
+
+When scanned:
+
+Backend loads:
+
+```json
+{
+ "farm":"RIV-PHC-0001",
+ "batch":"EG2406080001",
+ "collected":"2026-06-08",
+ "freshness":"96",
+ "status":"ACTIVE"
+}
+```
+
+---
+
+# FRESHNESS SCORE ENGINE
+
+Simple formula.
+
+```text
+100
+-
+(days_since_collection × 3)
+```
+
+Example:
+
+```text
+2 days old
+
+100 - 6
+
+94
+```
+
+Display:
+
+```text
+98-100 Fresh
+
+90-97 Very Fresh
+
+80-89 Good
+
+Below 80 Aging
+```
+
+No AI needed.
+
+---
+
+# SEARCH SYSTEM
+
+User types:
+
+```text
+Fresh eggs in Port Harcourt
+```
+
+Backend query:
+
+```sql
+SELECT *
+FROM listings
+WHERE status='ACTIVE'
+ORDER BY freshness_score DESC;
+```
+
+Later add:
+
+* location
+* price
+* rating
+
+---
+
+# AUDIT TRAIL (VERY IMPORTANT)
+
+Never delete records.
+
+Ever.
+
+Instead:
+
+```text
+ACTIVE
+
+ARCHIVED
+
+CANCELLED
+```
+
+Keep history forever.
+
+---
+
+# MVP DATABASE
+
+For Version 1, you only need:
+
+```text
+users
+
+farms
+
+egg_batches
+
+qr_codes
+
+listings
+
+orders
+
+batch_movements
+```
+
+Just these seven tables can power the entire first version.
+
+---
+
+# THE BIG OPPORTUNITY
+
+Most people think the QR code is the product.
+
+It isn't.
+
+The product is the **movement ledger**.
+
+Five years later, the most valuable thing may not be egg sales.
+
+It may be the data:
+
+* Which areas consume the most eggs
+* Which farms produce the best quality
+* Seasonal demand patterns
+* Pricing intelligence
+* Logistics optimization
+
+That's how a simple Farm ID + Batch QR system can evolve into a nationwide agricultural commerce infrastructure.
+
+
+
+
+
+
