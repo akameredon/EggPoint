@@ -243,6 +243,68 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /farms/{farmCode}/reviews:
+    get:
+      operationId: listReviews
+      tags: [farms]
+      summary: List reviews for a farm
+      parameters:
+        - name: farmCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+        "404":
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createReview
+      tags: [farms]
+      summary: Submit a review for a farm
+      parameters:
+        - name: farmCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /batches:
     get:
       operationId: listBatches
@@ -834,6 +896,40 @@ components:
       properties:
         verified:
           type: boolean
+
+    Review:
+      type: object
+      required: [id, farmId, buyerName, rating, comment, createdAt]
+      properties:
+        id:
+          type: integer
+        farmId:
+          type: integer
+        buyerName:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+
+    ReviewInput:
+      type: object
+      required: [buyerName, rating, comment]
+      properties:
+        buyerName:
+          type: string
+          minLength: 2
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          minLength: 10
 
     PlatformStats:
       type: object

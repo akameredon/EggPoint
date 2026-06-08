@@ -34,6 +34,8 @@ export * from './loginInput';
 export * from './platformStats';
 export * from './registerInput';
 export * from './registerInputRole';
+export * from './review';
+export * from './reviewInput';
 export * from './successResponse';
 export * from './userSession';
 export * from './userSessionRole';

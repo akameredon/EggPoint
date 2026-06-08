@@ -267,6 +267,31 @@ export interface VerifyFarmInput {
   verified: boolean;
 }
 
+export interface Review {
+  id: number;
+  farmId: number;
+  buyerName: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface ReviewInput {
+  /** @minLength 2 */
+  buyerName: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /** @minLength 10 */
+  comment: string;
+}
+
 export interface PlatformStats {
   totalFarms: number;
   verifiedFarms: number;

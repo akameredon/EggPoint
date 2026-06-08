@@ -7,6 +7,7 @@ import listingsRouter from "./listings";
 import inquiriesRouter from "./inquiries";
 import adminRouter from "./admin";
 import statsRouter from "./stats";
+import reviewsRouter from "./reviews";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(listingsRouter);
 router.use(inquiriesRouter);
 router.use(adminRouter);
 router.use(statsRouter);
+router.use(reviewsRouter);
 
 export default router;

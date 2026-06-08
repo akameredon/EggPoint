@@ -177,6 +177,50 @@ export const UpdateFarmResponse = zod.object({
 
 
 /**
+ * @summary List reviews for a farm
+ */
+export const ListReviewsParams = zod.object({
+  "farmCode": zod.coerce.string()
+})
+
+export const listReviewsResponseRatingMax = 5;
+
+
+
+export const ListReviewsResponseItem = zod.object({
+  "id": zod.number(),
+  "farmId": zod.number(),
+  "buyerName": zod.string(),
+  "rating": zod.number().min(1).max(listReviewsResponseRatingMax),
+  "comment": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListReviewsResponse = zod.array(ListReviewsResponseItem)
+
+
+/**
+ * @summary Submit a review for a farm
+ */
+export const CreateReviewParams = zod.object({
+  "farmCode": zod.coerce.string()
+})
+
+export const createReviewBodyBuyerNameMin = 2;
+
+export const createReviewBodyRatingMax = 5;
+
+export const createReviewBodyCommentMin = 10;
+
+
+
+export const CreateReviewBody = zod.object({
+  "buyerName": zod.string().min(createReviewBodyBuyerNameMin),
+  "rating": zod.number().min(1).max(createReviewBodyRatingMax),
+  "comment": zod.string().min(createReviewBodyCommentMin)
+})
+
+
+/**
  * @summary List egg batches
  */
 export const ListBatchesQueryParams = zod.object({
