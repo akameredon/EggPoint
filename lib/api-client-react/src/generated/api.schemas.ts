@@ -267,6 +267,16 @@ export interface VerifyFarmInput {
   verified: boolean;
 }
 
+export interface PaymentInitResponse {
+  paymentLink: string;
+  txRef: string;
+}
+
+export interface PaymentVerifyInput {
+  txRef: string;
+  transactionId: string;
+}
+
 export interface Review {
   id: number;
   farmId: number;

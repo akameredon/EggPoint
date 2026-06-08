@@ -24,6 +24,8 @@ tags:
     description: Admin operations
   - name: stats
     description: Platform statistics
+  - name: payments
+    description: Subscription payments
 
 paths:
   /healthz:
@@ -594,6 +596,66 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /payments/initiate:
+    post:
+      operationId: initiatePayment
+      tags: [payments]
+      summary: Initiate a Featured subscription payment via Flutterwave
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Payment link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentInitResponse"
+        "400":
+          description: Already featured or no farm
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/verify:
+    post:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify payment and upgrade farm to Featured
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentVerifyInput"
+      responses:
+        "200":
+          description: Payment verified and farm upgraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Payment not successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /stats:
     get:
       operationId: getStats
@@ -896,6 +958,24 @@ components:
       properties:
         verified:
           type: boolean
+
+    PaymentInitResponse:
+      type: object
+      required: [paymentLink, txRef]
+      properties:
+        paymentLink:
+          type: string
+        txRef:
+          type: string
+
+    PaymentVerifyInput:
+      type: object
+      required: [txRef, transactionId]
+      properties:
+        txRef:
+          type: string
+        transactionId:
+          type: string
 
     Review:
       type: object

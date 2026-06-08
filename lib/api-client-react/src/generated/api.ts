@@ -36,6 +36,8 @@ import type {
   ListListingsParams,
   Listing,
   LoginInput,
+  PaymentInitResponse,
+  PaymentVerifyInput,
   PlatformStats,
   RegisterInput,
   Review,
@@ -1632,6 +1634,147 @@ export const useVerifyFarm = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getVerifyFarmMutationOptions(options));
+    }
+
+export const getInitiatePaymentUrl = () => {
+
+
+
+
+  return `/api/payments/initiate`
+}
+
+/**
+ * @summary Initiate a Featured subscription payment via Flutterwave
+ */
+export const initiatePayment = async ( options?: RequestInit): Promise<PaymentInitResponse> => {
+
+  return customFetch<PaymentInitResponse>(getInitiatePaymentUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getInitiatePaymentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initiatePayment>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof initiatePayment>>, TError,void, TContext> => {
+
+const mutationKey = ['initiatePayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof initiatePayment>>, void> = () => {
+
+
+          return  initiatePayment(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InitiatePaymentMutationResult = NonNullable<Awaited<ReturnType<typeof initiatePayment>>>
+
+    export type InitiatePaymentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Initiate a Featured subscription payment via Flutterwave
+ */
+export const useInitiatePayment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initiatePayment>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof initiatePayment>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getInitiatePaymentMutationOptions(options));
+    }
+
+export const getVerifyPaymentUrl = () => {
+
+
+
+
+  return `/api/payments/verify`
+}
+
+/**
+ * @summary Verify payment and upgrade farm to Featured
+ */
+export const verifyPayment = async (paymentVerifyInput: PaymentVerifyInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getVerifyPaymentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      paymentVerifyInput,)
+  }
+);}
+
+
+
+
+export const getVerifyPaymentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPayment>>, TError,{data: BodyType<PaymentVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyPayment>>, TError,{data: BodyType<PaymentVerifyInput>}, TContext> => {
+
+const mutationKey = ['verifyPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyPayment>>, {data: BodyType<PaymentVerifyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyPayment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPayment>>>
+    export type VerifyPaymentMutationBody = BodyType<PaymentVerifyInput>
+    export type VerifyPaymentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Verify payment and upgrade farm to Featured
+ */
+export const useVerifyPayment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPayment>>, TError,{data: BodyType<PaymentVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyPayment>>,
+        TError,
+        {data: BodyType<PaymentVerifyInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyPaymentMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {

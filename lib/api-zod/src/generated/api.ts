@@ -466,6 +466,28 @@ export const VerifyFarmResponse = zod.object({
 
 
 /**
+ * @summary Initiate a Featured subscription payment via Flutterwave
+ */
+export const InitiatePaymentResponse = zod.object({
+  "paymentLink": zod.string(),
+  "txRef": zod.string()
+})
+
+
+/**
+ * @summary Verify payment and upgrade farm to Featured
+ */
+export const VerifyPaymentBody = zod.object({
+  "txRef": zod.string(),
+  "transactionId": zod.string()
+})
+
+export const VerifyPaymentResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary Platform-wide statistics
  */
 export const GetStatsResponse = zod.object({

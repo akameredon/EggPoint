@@ -31,6 +31,8 @@ export * from './listingEggSize';
 export * from './listingSubscriptionTier';
 export * from './listListingsParams';
 export * from './loginInput';
+export * from './paymentInitResponse';
+export * from './paymentVerifyInput';
 export * from './platformStats';
 export * from './registerInput';
 export * from './registerInputRole';
