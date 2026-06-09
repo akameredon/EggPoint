@@ -20,6 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DeliveryGroup,
+  DeliveryRequest,
+  DeliveryRequestInput,
+  DeliveryStatusUpdate,
   EggBatch,
   EggBatchInput,
   EggBatchUpdate,
@@ -1775,6 +1779,226 @@ export const useVerifyPayment = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getVerifyPaymentMutationOptions(options));
+    }
+
+export const getCreateDeliveryRequestUrl = () => {
+
+
+
+
+  return `/api/delivery-requests`
+}
+
+/**
+ * @summary Submit a group delivery request for a batch
+ */
+export const createDeliveryRequest = async (deliveryRequestInput: DeliveryRequestInput, options?: RequestInit): Promise<DeliveryRequest> => {
+
+  return customFetch<DeliveryRequest>(getCreateDeliveryRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deliveryRequestInput,)
+  }
+);}
+
+
+
+
+export const getCreateDeliveryRequestMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeliveryRequest>>, TError,{data: BodyType<DeliveryRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDeliveryRequest>>, TError,{data: BodyType<DeliveryRequestInput>}, TContext> => {
+
+const mutationKey = ['createDeliveryRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDeliveryRequest>>, {data: BodyType<DeliveryRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDeliveryRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDeliveryRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createDeliveryRequest>>>
+    export type CreateDeliveryRequestMutationBody = BodyType<DeliveryRequestInput>
+    export type CreateDeliveryRequestMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Submit a group delivery request for a batch
+ */
+export const useCreateDeliveryRequest = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeliveryRequest>>, TError,{data: BodyType<DeliveryRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDeliveryRequest>>,
+        TError,
+        {data: BodyType<DeliveryRequestInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDeliveryRequestMutationOptions(options));
+    }
+
+export const getListDeliveryGroupsUrl = () => {
+
+
+
+
+  return `/api/admin/delivery-groups`
+}
+
+/**
+ * @summary List all delivery requests grouped by state and farm (admin only)
+ */
+export const listDeliveryGroups = async ( options?: RequestInit): Promise<DeliveryGroup[]> => {
+
+  return customFetch<DeliveryGroup[]>(getListDeliveryGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDeliveryGroupsQueryKey = () => {
+    return [
+    `/api/admin/delivery-groups`
+    ] as const;
+    }
+
+
+export const getListDeliveryGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listDeliveryGroups>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDeliveryGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDeliveryGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDeliveryGroups>>> = ({ signal }) => listDeliveryGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDeliveryGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDeliveryGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listDeliveryGroups>>>
+export type ListDeliveryGroupsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List all delivery requests grouped by state and farm (admin only)
+ */
+
+export function useListDeliveryGroups<TData = Awaited<ReturnType<typeof listDeliveryGroups>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDeliveryGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDeliveryGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateDeliveryStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/delivery-requests/${id}/status`
+}
+
+/**
+ * @summary Update the status of a delivery request (admin only)
+ */
+export const updateDeliveryStatus = async (id: number,
+    deliveryStatusUpdate: DeliveryStatusUpdate, options?: RequestInit): Promise<DeliveryRequest> => {
+
+  return customFetch<DeliveryRequest>(getUpdateDeliveryStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deliveryStatusUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateDeliveryStatusMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeliveryStatus>>, TError,{id: number;data: BodyType<DeliveryStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDeliveryStatus>>, TError,{id: number;data: BodyType<DeliveryStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateDeliveryStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDeliveryStatus>>, {id: number;data: BodyType<DeliveryStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDeliveryStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDeliveryStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateDeliveryStatus>>>
+    export type UpdateDeliveryStatusMutationBody = BodyType<DeliveryStatusUpdate>
+    export type UpdateDeliveryStatusMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update the status of a delivery request (admin only)
+ */
+export const useUpdateDeliveryStatus = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeliveryStatus>>, TError,{id: number;data: BodyType<DeliveryStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDeliveryStatus>>,
+        TError,
+        {id: number;data: BodyType<DeliveryStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateDeliveryStatusMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {

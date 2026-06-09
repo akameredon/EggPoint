@@ -4,3 +4,4 @@ export * from "./batches";
 export * from "./inquiries";
 export * from "./reviews";
 export * from "./subscriptions";
+export * from "./delivery-requests";

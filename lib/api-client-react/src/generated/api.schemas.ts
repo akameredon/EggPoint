@@ -313,6 +313,98 @@ export interface PlatformStats {
   totalBatches: number;
 }
 
+export interface DeliveryRequestInput {
+  batchCode: string;
+  /** @minLength 2 */
+  buyerName: string;
+  /** @minLength 10 */
+  buyerPhone: string;
+  state: string;
+  lga: string;
+  town: string;
+  streetAddress: string;
+  marketArea?: string;
+  village?: string;
+  landmark?: string;
+  /** @minimum 1 */
+  quantityCrates: number;
+  notes?: string;
+}
+
+export type DeliveryRequestStatus = typeof DeliveryRequestStatus[keyof typeof DeliveryRequestStatus];
+
+
+export const DeliveryRequestStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  DISPATCHED: 'DISPATCHED',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface DeliveryRequest {
+  id: number;
+  batchCode: string;
+  farmCode: string;
+  buyerName: string;
+  buyerPhone: string;
+  state: string;
+  lga: string;
+  town: string;
+  streetAddress: string;
+  /** @nullable */
+  marketArea?: string | null;
+  /** @nullable */
+  village?: string | null;
+  /** @nullable */
+  landmark?: string | null;
+  quantityCrates: number;
+  status: DeliveryRequestStatus;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export type DeliveryGroupEggSize = typeof DeliveryGroupEggSize[keyof typeof DeliveryGroupEggSize];
+
+
+export const DeliveryGroupEggSize = {
+  SMALL: 'SMALL',
+  MEDIUM: 'MEDIUM',
+  LARGE: 'LARGE',
+  JUMBO: 'JUMBO',
+} as const;
+
+export interface DeliveryGroup {
+  groupKey: string;
+  farmCode: string;
+  farmName: string;
+  farmState: string;
+  farmLga: string;
+  deliveryState: string;
+  batchCode: string;
+  eggSize: DeliveryGroupEggSize;
+  pricePerCrate: number;
+  collectionDate: string;
+  totalCrates: number;
+  requests: DeliveryRequest[];
+}
+
+export type DeliveryStatusUpdateStatus = typeof DeliveryStatusUpdateStatus[keyof typeof DeliveryStatusUpdateStatus];
+
+
+export const DeliveryStatusUpdateStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  DISPATCHED: 'DISPATCHED',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface DeliveryStatusUpdate {
+  status: DeliveryStatusUpdateStatus;
+}
+
 export type ListFarmsParams = {
 state?: string;
 search?: string;

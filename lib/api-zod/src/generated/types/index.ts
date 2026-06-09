@@ -6,6 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './deliveryGroup';
+export * from './deliveryGroupEggSize';
+export * from './deliveryRequest';
+export * from './deliveryRequestInput';
+export * from './deliveryRequestStatus';
+export * from './deliveryStatusUpdate';
+export * from './deliveryStatusUpdateStatus';
 export * from './eggBatch';
 export * from './eggBatchEggSize';
 export * from './eggBatchInput';

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, Verified, Calendar, ShieldCheck, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, MapPin, Verified, Calendar, ShieldCheck, Star, ChevronDown, ChevronUp, Truck } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 function toWhatsAppNumber(phone: string | null | undefined): string | null {
@@ -291,10 +291,15 @@ export default function SupplierProfile() {
                       <div className="text-sm font-medium text-foreground mb-4">
                         {batch.quantityCrates} crates available
                       </div>
-                      <div className="flex items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                      <div className="flex items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded mb-3">
                         <Calendar className="w-4 h-4 mr-2" />
                         Collection: {formatDate(batch.collectionDate)}
                       </div>
+                      <Link href={`/group-order/${batch.batchCode}`} onClick={e => e.stopPropagation()}>
+                        <Button variant="outline" size="sm" className="w-full text-xs">
+                          <Truck className="w-3 h-3 mr-1.5" /> Request Group Delivery
+                        </Button>
+                      </Link>
                     </CardContent>
                   </Card>
                 ))}

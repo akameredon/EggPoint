@@ -15,6 +15,7 @@ import SupplierProfile from "@/pages/suppliers/profile";
 import Sell from "@/pages/sell";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import GroupOrder from "@/pages/group-order";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ function Router() {
           <Route path="/sell" component={Sell} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/admin" component={Admin} />
+          <Route path="/group-order/:batchCode" component={GroupOrder} />
           <Route component={NotFound} />
         </Switch>
       </main>

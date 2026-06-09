@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { MapPin, Box, Calendar, Verified } from "lucide-react";
+import { MapPin, Box, Calendar, Verified, Truck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Suppliers() {
@@ -111,9 +111,14 @@ export default function Suppliers() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 pt-0 mt-auto">
+              <div className="p-6 pt-0 mt-auto flex flex-col gap-2">
                 <Link href={`/suppliers/${listing.farmCode}`}>
                   <Button className="w-full">View Farm & Inquire</Button>
+                </Link>
+                <Link href={`/group-order/${listing.batchCode}`}>
+                  <Button variant="outline" className="w-full text-sm">
+                    <Truck className="w-3.5 h-3.5 mr-2" /> Request Group Delivery
+                  </Button>
                 </Link>
               </div>
             </Card>

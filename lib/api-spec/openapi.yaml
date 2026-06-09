@@ -26,6 +26,8 @@ tags:
     description: Platform statistics
   - name: payments
     description: Subscription payments
+  - name: delivery
+    description: Group delivery / coordinated logistics
 
 paths:
   /healthz:
@@ -656,6 +658,105 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /delivery-requests:
+    post:
+      operationId: createDeliveryRequest
+      tags: [delivery]
+      summary: Submit a group delivery request for a batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRequestInput"
+      responses:
+        "201":
+          description: Delivery request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequest"
+        "400":
+          description: Invalid input or batch not active
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/delivery-groups:
+    get:
+      operationId: listDeliveryGroups
+      tags: [delivery]
+      summary: List all delivery requests grouped by state and farm (admin only)
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Grouped delivery requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryGroup"
+        "403":
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/delivery-requests/{id}/status:
+    patch:
+      operationId: updateDeliveryStatus
+      tags: [delivery]
+      summary: Update the status of a delivery request (admin only)
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryStatusUpdate"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequest"
+        "400":
+          description: Invalid status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /stats:
     get:
       operationId: getStats
@@ -1029,3 +1130,113 @@ components:
           type: integer
         totalBatches:
           type: integer
+
+    DeliveryRequestInput:
+      type: object
+      required: [batchCode, buyerName, buyerPhone, state, lga, town, streetAddress, quantityCrates]
+      properties:
+        batchCode:
+          type: string
+        buyerName:
+          type: string
+          minLength: 2
+        buyerPhone:
+          type: string
+          minLength: 10
+        state:
+          type: string
+        lga:
+          type: string
+        town:
+          type: string
+        streetAddress:
+          type: string
+        marketArea:
+          type: string
+        village:
+          type: string
+        landmark:
+          type: string
+        quantityCrates:
+          type: integer
+          minimum: 1
+        notes:
+          type: string
+
+    DeliveryRequest:
+      type: object
+      required: [id, batchCode, farmCode, buyerName, buyerPhone, state, lga, town, streetAddress, quantityCrates, status, createdAt]
+      properties:
+        id:
+          type: integer
+        batchCode:
+          type: string
+        farmCode:
+          type: string
+        buyerName:
+          type: string
+        buyerPhone:
+          type: string
+        state:
+          type: string
+        lga:
+          type: string
+        town:
+          type: string
+        streetAddress:
+          type: string
+        marketArea:
+          type: ["string", "null"]
+        village:
+          type: ["string", "null"]
+        landmark:
+          type: ["string", "null"]
+        quantityCrates:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    DeliveryGroup:
+      type: object
+      required: [groupKey, farmCode, farmName, farmState, farmLga, deliveryState, batchCode, eggSize, pricePerCrate, collectionDate, totalCrates, requests]
+      properties:
+        groupKey:
+          type: string
+        farmCode:
+          type: string
+        farmName:
+          type: string
+        farmState:
+          type: string
+        farmLga:
+          type: string
+        deliveryState:
+          type: string
+        batchCode:
+          type: string
+        eggSize:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE, JUMBO]
+        pricePerCrate:
+          type: number
+        collectionDate:
+          type: string
+        totalCrates:
+          type: integer
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryRequest"
+
+    DeliveryStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED]

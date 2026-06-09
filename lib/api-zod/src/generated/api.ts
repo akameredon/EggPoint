@@ -493,6 +493,100 @@ export const VerifyPaymentResponse = zod.object({
 
 
 /**
+ * @summary Submit a group delivery request for a batch
+ */
+export const createDeliveryRequestBodyBuyerNameMin = 2;
+
+export const createDeliveryRequestBodyBuyerPhoneMin = 10;
+
+
+
+
+export const CreateDeliveryRequestBody = zod.object({
+  "batchCode": zod.string(),
+  "buyerName": zod.string().min(createDeliveryRequestBodyBuyerNameMin),
+  "buyerPhone": zod.string().min(createDeliveryRequestBodyBuyerPhoneMin),
+  "state": zod.string(),
+  "lga": zod.string(),
+  "town": zod.string(),
+  "streetAddress": zod.string(),
+  "marketArea": zod.string().optional(),
+  "village": zod.string().optional(),
+  "landmark": zod.string().optional(),
+  "quantityCrates": zod.number().min(1),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary List all delivery requests grouped by state and farm (admin only)
+ */
+export const ListDeliveryGroupsResponseItem = zod.object({
+  "groupKey": zod.string(),
+  "farmCode": zod.string(),
+  "farmName": zod.string(),
+  "farmState": zod.string(),
+  "farmLga": zod.string(),
+  "deliveryState": zod.string(),
+  "batchCode": zod.string(),
+  "eggSize": zod.enum(['SMALL', 'MEDIUM', 'LARGE', 'JUMBO']),
+  "pricePerCrate": zod.number(),
+  "collectionDate": zod.string(),
+  "totalCrates": zod.number(),
+  "requests": zod.array(zod.object({
+  "id": zod.number(),
+  "batchCode": zod.string(),
+  "farmCode": zod.string(),
+  "buyerName": zod.string(),
+  "buyerPhone": zod.string(),
+  "state": zod.string(),
+  "lga": zod.string(),
+  "town": zod.string(),
+  "streetAddress": zod.string(),
+  "marketArea": zod.string().nullish(),
+  "village": zod.string().nullish(),
+  "landmark": zod.string().nullish(),
+  "quantityCrates": zod.number(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+export const ListDeliveryGroupsResponse = zod.array(ListDeliveryGroupsResponseItem)
+
+
+/**
+ * @summary Update the status of a delivery request (admin only)
+ */
+export const UpdateDeliveryStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateDeliveryStatusBody = zod.object({
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'])
+})
+
+export const UpdateDeliveryStatusResponse = zod.object({
+  "id": zod.number(),
+  "batchCode": zod.string(),
+  "farmCode": zod.string(),
+  "buyerName": zod.string(),
+  "buyerPhone": zod.string(),
+  "state": zod.string(),
+  "lga": zod.string(),
+  "town": zod.string(),
+  "streetAddress": zod.string(),
+  "marketArea": zod.string().nullish(),
+  "village": zod.string().nullish(),
+  "landmark": zod.string().nullish(),
+  "quantityCrates": zod.number(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Platform-wide statistics
  */
 export const GetStatsResponse = zod.object({
