@@ -83,6 +83,8 @@ export interface Farm {
   description?: string | null;
   verified: boolean;
   subscriptionTier: FarmSubscriptionTier;
+  /** @nullable */
+  featuredUntil?: string | null;
   activeBatchCount?: number;
   totalCratesAvailable?: number;
   createdAt: string;

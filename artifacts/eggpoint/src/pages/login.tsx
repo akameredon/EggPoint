@@ -1,4 +1,3 @@
-import { useState } from "wouter";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +22,7 @@ export default function Login() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: user } = useGetMe({ query: { retry: false } });
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: ["/api/auth/me"] } });
   
   // Redirect if already logged in
   if (user) {
@@ -53,7 +52,7 @@ export default function Login() {
           toast({
             variant: "destructive",
             title: "Login failed",
-            description: error.error || "Please check your credentials and try again.",
+            description: (error as { error?: string }).error || "Please check your credentials and try again.",
           });
         },
       }

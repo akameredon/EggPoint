@@ -41,9 +41,11 @@ const batchSchema = z.object({
 function FeaturedUpgradeCard({
   farmCode,
   onUpgraded,
+  renewMode = false,
 }: {
   farmCode: string;
   onUpgraded: () => void;
+  renewMode?: boolean;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,12 +90,17 @@ function FeaturedUpgradeCard({
         window.location.href = paymentLink;
       },
       onError: (err) => {
-        toast({ variant: "destructive", title: "Could not start payment", description: err.error || "Please try again." });
+        toast({ variant: "destructive", title: "Could not start payment", description: (err as { error?: string }).error || "Please try again." });
       },
     });
   }
 
   if (verifying) {
+    if (renewMode) return (
+      <div className="flex items-center gap-2 text-amber-700 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin" /> Verifying payment...
+      </div>
+    );
     return (
       <Card className="border-amber-200 bg-amber-50 mb-8">
         <CardContent className="p-6 flex items-center gap-3">
@@ -101,6 +108,21 @@ function FeaturedUpgradeCard({
           <span className="font-medium text-amber-800">Verifying your payment...</span>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (renewMode) {
+    return (
+      <Button
+        onClick={handleUpgrade}
+        disabled={initiatePayment.isPending}
+        className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0"
+      >
+        {initiatePayment.isPending
+          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Opening payment...</>
+          : <><Zap className="w-4 h-4 mr-2" /> Renew — ₦15,000</>
+        }
+      </Button>
     );
   }
 
@@ -151,7 +173,7 @@ export default function Dashboard() {
   const [isNewBatchOpen, setIsNewBatchOpen] = useState(false);
 
   const { data: user, isLoading: userLoading } = useGetMe({
-    query: { retry: false }
+    query: { retry: false, queryKey: ["/api/auth/me"] }
   });
 
   const farmCode = user?.farmCode || "";
@@ -212,7 +234,7 @@ export default function Dashboard() {
           form.reset();
           toast({ title: "Batch created successfully" });
         },
-        onError: (error) => toast({ variant: "destructive", title: "Error", description: error.error })
+        onError: (error) => toast({ variant: "destructive", title: "Error", description: (error as { error?: string }).error })
       }
     );
   }
@@ -242,6 +264,10 @@ export default function Dashboard() {
   }
 
   const isFeatured = farm?.subscriptionTier === "FEATURED";
+  const featuredUntil = farm?.featuredUntil ? new Date(farm.featuredUntil) : null;
+  const daysUntilExpiry = featuredUntil
+    ? Math.ceil((featuredUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -256,6 +282,12 @@ export default function Dashboard() {
             )}
           </div>
           <p className="text-muted-foreground">Manage your inventory and buyer inquiries for {farm?.farmName}</p>
+          {isFeatured && featuredUntil && (
+            <p className={`text-sm mt-1 ${daysUntilExpiry !== null && daysUntilExpiry <= 3 ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>
+              Featured listing active until {featuredUntil.toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
+              {daysUntilExpiry !== null && daysUntilExpiry <= 3 && ` — expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`}
+            </p>
+          )}
         </div>
         <Button variant="outline" onClick={handleLogout}>
           <LogOut className="w-4 h-4 mr-2" /> Logout
@@ -273,6 +305,25 @@ export default function Dashboard() {
           farmCode={farmCode}
           onUpgraded={() => refetchFarm()}
         />
+      )}
+
+      {isFeatured && daysUntilExpiry !== null && daysUntilExpiry <= 7 && (
+        <Card className="border-amber-300 bg-amber-50 mb-8">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex gap-3 items-center">
+              <Star className="w-5 h-5 text-amber-600 fill-amber-400 shrink-0" />
+              <div>
+                <p className="font-semibold text-amber-900">
+                  {daysUntilExpiry <= 0
+                    ? "Your Featured listing has expired"
+                    : `Your Featured listing expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`}
+                </p>
+                <p className="text-sm text-amber-700">Renew now to stay at the top of buyer searches.</p>
+              </div>
+            </div>
+            <FeaturedUpgradeCard farmCode={farmCode} onUpgraded={() => refetchFarm()} renewMode />
+          </CardContent>
+        </Card>
       )}
 
       <Tabs defaultValue="batches" className="w-full">

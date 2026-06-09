@@ -14,6 +14,7 @@ export const farmsTable = pgTable("farms", {
   description: text("description"),
   verified: boolean("verified").notNull().default(false),
   subscriptionTier: subscriptionTierEnum("subscription_tier").notNull().default("FREE"),
+  featuredUntil: timestamp("featured_until", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

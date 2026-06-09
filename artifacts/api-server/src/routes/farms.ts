@@ -31,6 +31,7 @@ async function enrichFarm(farm: typeof farmsTable.$inferSelect) {
     description: farm.description,
     verified: farm.verified,
     subscriptionTier: farm.subscriptionTier,
+    featuredUntil: farm.featuredUntil ? farm.featuredUntil.toISOString() : null,
     activeBatchCount: Number(batchStats[0]?.activeBatchCount ?? 0),
     totalCratesAvailable: Number(batchStats[0]?.totalCratesAvailable ?? 0),
     createdAt: farm.createdAt.toISOString(),

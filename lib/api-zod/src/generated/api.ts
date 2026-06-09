@@ -94,6 +94,7 @@ export const ListFarmsResponseItem = zod.object({
   "description": zod.string().nullish(),
   "verified": zod.boolean(),
   "subscriptionTier": zod.enum(['FREE', 'FEATURED']),
+  "featuredUntil": zod.string().nullish(),
   "activeBatchCount": zod.number().optional(),
   "totalCratesAvailable": zod.number().optional(),
   "createdAt": zod.string()
@@ -135,6 +136,7 @@ export const GetFarmResponse = zod.object({
   "description": zod.string().nullish(),
   "verified": zod.boolean(),
   "subscriptionTier": zod.enum(['FREE', 'FEATURED']),
+  "featuredUntil": zod.string().nullish(),
   "activeBatchCount": zod.number().optional(),
   "totalCratesAvailable": zod.number().optional(),
   "createdAt": zod.string()
@@ -170,6 +172,7 @@ export const UpdateFarmResponse = zod.object({
   "description": zod.string().nullish(),
   "verified": zod.boolean(),
   "subscriptionTier": zod.enum(['FREE', 'FEATURED']),
+  "featuredUntil": zod.string().nullish(),
   "activeBatchCount": zod.number().optional(),
   "totalCratesAvailable": zod.number().optional(),
   "createdAt": zod.string()
@@ -429,6 +432,7 @@ export const ListPendingFarmsResponseItem = zod.object({
   "description": zod.string().nullish(),
   "verified": zod.boolean(),
   "subscriptionTier": zod.enum(['FREE', 'FEATURED']),
+  "featuredUntil": zod.string().nullish(),
   "activeBatchCount": zod.number().optional(),
   "totalCratesAvailable": zod.number().optional(),
   "createdAt": zod.string()
@@ -459,6 +463,7 @@ export const VerifyFarmResponse = zod.object({
   "description": zod.string().nullish(),
   "verified": zod.boolean(),
   "subscriptionTier": zod.enum(['FREE', 'FEATURED']),
+  "featuredUntil": zod.string().nullish(),
   "activeBatchCount": zod.number().optional(),
   "totalCratesAvailable": zod.number().optional(),
   "createdAt": zod.string()

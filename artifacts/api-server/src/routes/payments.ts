@@ -28,9 +28,13 @@ router.post("/payments/initiate", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
-  if (farm.subscriptionTier === "FEATURED") {
-    res.status(400).json({ error: "Your farm is already on the Featured plan" });
-    return;
+  const isRenewal = farm.subscriptionTier === "FEATURED";
+  if (isRenewal && farm.featuredUntil) {
+    const daysLeft = (farm.featuredUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    if (daysLeft > 7) {
+      res.status(400).json({ error: "Your Featured plan is still active. Renewal is only available within 7 days of expiry." });
+      return;
+    }
   }
 
   const txRef = `EP-${farm.farmCode}-${Date.now()}`;
@@ -123,9 +127,19 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
     .set({ status: "COMPLETED", flwTxId: transactionId, completedAt: new Date() })
     .where(eq(subscriptionsTable.flwTxRef, txRef));
 
+  const [currentFarm] = await db
+    .select({ featuredUntil: farmsTable.featuredUntil })
+    .from(farmsTable)
+    .where(eq(farmsTable.id, sub.farmId));
+
+  const baseDate = currentFarm?.featuredUntil && currentFarm.featuredUntil > new Date()
+    ? currentFarm.featuredUntil
+    : new Date();
+  const featuredUntil = new Date(baseDate.getTime() + 31 * 24 * 60 * 60 * 1000);
+
   await db
     .update(farmsTable)
-    .set({ subscriptionTier: "FEATURED" })
+    .set({ subscriptionTier: "FEATURED", featuredUntil })
     .where(eq(farmsTable.id, sub.farmId));
 
   res.json({ success: true, message: "Your farm has been upgraded to Featured!" });

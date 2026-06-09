@@ -14,11 +14,10 @@ export default function Suppliers() {
   const [stateFilter, setStateFilter] = useState<string>("");
   const [sizeFilter, setSizeFilter] = useState<string>("");
 
-  const { data: listings, isLoading } = useListListings({ 
-    query: { 
-      queryKey: getListListingsQueryKey({ state: stateFilter, eggSize: sizeFilter }) 
-    } 
-  });
+  const { data: listings, isLoading } = useListListings(
+    { state: stateFilter || undefined, eggSize: sizeFilter || undefined },
+    { query: { queryKey: getListListingsQueryKey({ state: stateFilter, eggSize: sizeFilter }) } }
+  );
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

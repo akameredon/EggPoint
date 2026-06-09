@@ -65,7 +65,7 @@ export default function Sell() {
           toast({
             variant: "destructive",
             title: "Registration failed",
-            description: error.error || "Could not create account.",
+            description: (error as { error?: string }).error || "Could not create account.",
           });
         },
       }
@@ -84,7 +84,7 @@ export default function Sell() {
           toast({
             variant: "destructive",
             title: "Farm creation failed",
-            description: error.error || "Could not create farm profile.",
+            description: (error as { error?: string }).error || "Could not create farm profile.",
           });
         },
       }

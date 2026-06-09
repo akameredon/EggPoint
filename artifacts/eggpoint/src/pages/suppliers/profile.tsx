@@ -159,7 +159,7 @@ export default function SupplierProfile() {
           inquiryForm.reset();
         },
         onError: (error) => {
-          toast({ variant: "destructive", title: "Error", description: error.error || "Could not send inquiry" });
+          toast({ variant: "destructive", title: "Error", description: (error as { error?: string }).error || "Could not send inquiry" });
         },
       }
     );

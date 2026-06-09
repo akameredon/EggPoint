@@ -20,7 +20,7 @@ export default function Admin() {
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading } = useGetMe({ 
-    query: { retry: false } 
+    query: { retry: false, queryKey: ["/api/auth/me"] } 
   });
   
   const { data: pendingFarms, isLoading: farmsLoading } = useListPendingFarms({

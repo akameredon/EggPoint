@@ -5,7 +5,7 @@ import { Egg } from "lucide-react";
 
 export function Navbar() {
   const [location] = useLocation();
-  const { data: user } = useGetMe({ query: { retry: false } });
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: ["/api/auth/me"] } });
 
   return (
     <nav className="border-b border-border bg-card">

@@ -767,6 +767,8 @@ components:
         subscriptionTier:
           type: string
           enum: [FREE, FEATURED]
+        featuredUntil:
+          type: ["string", "null"]
         activeBatchCount:
           type: integer
         totalCratesAvailable:
