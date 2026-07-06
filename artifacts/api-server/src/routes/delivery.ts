@@ -1,9 +1,54 @@
 import { Router, type IRouter } from "express";
 import { db, farmsTable, eggBatchesTable, deliveryRequestsTable } from "@workspace/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth";
 
 const router: IRouter = Router();
+
+function normalizeAddressToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function extractStreetAnchor(streetAddress: string): string {
+  const tokens = normalizeAddressToken(streetAddress)
+    .split(/\s+/)
+    .filter(Boolean);
+  const stopWords = new Set([
+    "road", "rd", "street", "st", "avenue", "av", "lane", "ln", "close", "cl",
+    "crescent", "cres", "drive", "dr", "way", "wy", "junction", "junc", "link",
+    "lk", "court", "ct", "block", "plot", "house", "hse", "no", "number", "near",
+    "next", "opposite", "beside", "by", "behind",
+  ]);
+
+  const significant = tokens.filter((token) => !stopWords.has(token));
+  return significant.slice(0, 3).join(" ");
+}
+
+function buildProximityGroup(values: {
+  state: string;
+  lga: string;
+  town: string;
+  marketArea?: string | null;
+  village?: string | null;
+  streetAddress: string;
+}) {
+  const location = [values.town, values.marketArea || values.village].filter(Boolean).join(" • ");
+  const streetAnchor = extractStreetAnchor(values.streetAddress);
+  const proximityLabel = [location, streetAnchor].filter(Boolean).join(" • ");
+  const proximityGroupKey = [
+    normalizeAddressToken(values.state),
+    normalizeAddressToken(values.lga),
+    normalizeAddressToken(values.town),
+    normalizeAddressToken(values.marketArea ?? ""),
+    normalizeAddressToken(values.village ?? ""),
+    streetAnchor,
+  ].filter(Boolean).join("||");
+
+  return {
+    proximityGroupKey,
+    proximityLabel: proximityLabel || "Nearby delivery zone",
+  };
+}
 
 router.post("/delivery-requests", async (req, res): Promise<void> => {
   const {
@@ -51,6 +96,15 @@ router.post("/delivery-requests", async (req, res): Promise<void> => {
     return;
   }
 
+  const proximity = buildProximityGroup({
+    state: String(state),
+    lga: String(lga),
+    town: String(town),
+    marketArea: marketArea ? String(marketArea) : null,
+    village: village ? String(village) : null,
+    streetAddress: String(streetAddress),
+  });
+
   const [request] = await db
     .insert(deliveryRequestsTable)
     .values({
@@ -73,7 +127,11 @@ router.post("/delivery-requests", async (req, res): Promise<void> => {
     })
     .returning();
 
-  res.status(201).json(request);
+  res.status(201).json({
+    ...request,
+    proximityGroupKey: proximity.proximityGroupKey,
+    proximityLabel: proximity.proximityLabel,
+  });
 });
 
 router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<void> => {
@@ -123,11 +181,20 @@ router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<voi
     pricePerCrate: number;
     collectionDate: string;
     totalCrates: number;
+    proximityLabel: string;
     requests: typeof requests;
   }>();
 
   for (const r of requests) {
-    const key = `${r.state}||${r.farmCode}||${r.batchCode}`;
+    const proximity = buildProximityGroup({
+      state: r.state,
+      lga: r.lga,
+      town: r.town,
+      marketArea: r.marketArea,
+      village: r.village,
+      streetAddress: r.streetAddress,
+    });
+    const key = `${proximity.proximityGroupKey}||${r.farmCode}||${r.batchCode}`;
     if (!groupMap.has(key)) {
       groupMap.set(key, {
         groupKey: key,
@@ -141,6 +208,7 @@ router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<voi
         pricePerCrate: Number(r.pricePerCrate),
         collectionDate: r.collectionDate,
         totalCrates: 0,
+        proximityLabel: proximity.proximityLabel,
         requests: [],
       });
     }

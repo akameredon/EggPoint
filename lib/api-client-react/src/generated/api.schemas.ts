@@ -387,6 +387,7 @@ export interface DeliveryGroup {
   pricePerCrate: number;
   collectionDate: string;
   totalCrates: number;
+  proximityLabel: string;
   requests: DeliveryRequest[];
 }
 

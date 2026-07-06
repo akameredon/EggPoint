@@ -533,6 +533,7 @@ export const ListDeliveryGroupsResponseItem = zod.object({
   "pricePerCrate": zod.number(),
   "collectionDate": zod.string(),
   "totalCrates": zod.number(),
+  "proximityLabel": zod.string(),
   "requests": zod.array(zod.object({
   "id": zod.number(),
   "batchCode": zod.string(),

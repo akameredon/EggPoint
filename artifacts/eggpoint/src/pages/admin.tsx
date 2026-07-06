@@ -100,7 +100,7 @@ export default function Admin() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Admin Operations</h1>
-          <p className="text-muted-foreground">Manage platform access, farm verifications, and logistics</p>
+          <p className="text-muted-foreground">Manage platform access, farm verifications, and nearby delivery clusters</p>
         </div>
         <Button variant="outline" onClick={handleLogout}>
           <LogOut className="w-4 h-4 mr-2" /> Logout
@@ -118,7 +118,7 @@ export default function Admin() {
             )}
           </TabsTrigger>
           <TabsTrigger value="logistics">
-            <Truck className="w-4 h-4 mr-2" /> Group Deliveries
+            <Truck className="w-4 h-4 mr-2" /> Nearby Deliveries
             {totalDeliveryRequests > 0 && (
               <Badge className="ml-2 bg-primary text-primary-foreground text-xs px-1.5 py-0">
                 {totalDeliveryRequests}
@@ -190,7 +190,7 @@ export default function Admin() {
             <div className="text-center py-20 bg-card rounded-lg border">
               <Truck className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-foreground">No delivery requests yet</h3>
-              <p className="mt-1 text-muted-foreground">When buyers request coordinated delivery, their grouped orders will appear here.</p>
+              <p className="mt-1 text-muted-foreground">When buyers request coordinated delivery from the same area, the nearby delivery clusters will appear here.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -229,8 +229,11 @@ export default function Admin() {
                           </span>
                           <span>Collection: {formatDate(group.collectionDate)}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Farm location: {group.farmLga}, {group.farmState}
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+                            Proximity zone: {group.proximityLabel}
+                          </span>
+                          <span>Farm location: {group.farmLga}, {group.farmState}</span>
                         </div>
                       </div>
                     </div>

@@ -149,8 +149,9 @@ export default function GroupOrder() {
           Request Coordinated Delivery
         </h1>
         <p className="text-muted-foreground">
-          Pool your order with other buyers in your state. One truck collects from the farm
-          and delivers to every address — each package labelled with your name.
+          Pool your order with other buyers in the same area. We use your address details to
+          build a nearby delivery cluster so one truck can collect from the farm and drop to
+          several homes or businesses in one loop.
         </p>
       </div>
 
@@ -219,6 +220,9 @@ export default function GroupOrder() {
               <div className="border-t pt-4">
                 <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" /> Delivery Address
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  The more precise your address details, the better we can group your order with nearby buyers for a shared delivery run.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
