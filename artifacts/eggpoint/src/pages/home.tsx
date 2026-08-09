@@ -35,7 +35,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ₦15 Waste-Rescue Narrative */}
+      {/* ₦50 Waste-Rescue Narrative */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-10 items-center">
@@ -45,10 +45,10 @@ export default function Home() {
                 Waste interception
               </div>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                Eggs at ₦15 — focus on what would have spoiled
+                Eggs at ₦50 — focus on what would have spoiled
               </h2>
               <p className="text-primary-foreground/90 text-lg leading-relaxed mb-4">
-                Research shows the volume of eggs that spoil and waste globally every day is larger than the volume humans actually consume. We intercept healthy eggs before they decay, move them fast through our physical neural network, and sell them at ₦15.
+                Research shows the volume of eggs that spoil and waste globally every day is larger than the volume humans actually consume. We intercept healthy eggs before they decay, move them fast through our physical neural network, and sell them at ₦50.
               </p>
               <p className="text-primary-foreground/80 mb-6">
                 Existing demand already eats its share. We capture the part that would have been lost. Tell us you need eggs, give your address, pay on delivery or online.
@@ -74,7 +74,7 @@ export default function Home() {
             <div className="bg-primary-foreground/10 rounded-xl p-6 sm:p-8 border border-primary-foreground/20">
               <h3 className="font-bold text-xl mb-4">The pitch (street + video)</h3>
               <blockquote className="text-sm sm:text-base leading-relaxed text-primary-foreground/90 italic">
-                “I can sell this egg for you for 15 naira. I know you will say it is a lie. We found that eggs that spoil daily outnumber what people eat. We grab them while still healthy and sell cheap. Go to the website. Need egg? Address. Deliver. Pay when delivered or online. Drop questions in the comments — I answer personally. Don’t say it is impossible. I am the man of impossibility.”
+                “I can sell this egg for you for 50 naira. I know you will say it is a lie. We found that eggs that spoil daily outnumber what people eat. We grab them while still healthy and sell cheap. Go to the website. Need egg? Address. Deliver. Pay when delivered or online. Drop questions in the comments — I answer personally. Don’t say it is impossible. I am the man of impossibility.”
               </blockquote>
             </div>
           </div>

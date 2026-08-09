@@ -48,7 +48,7 @@ export default function Join() {
 
   return (
     <div className="w-full bg-background">
-      {/* Hero — ₦15 claim */}
+      {/* Hero — ₦50 claim */}
       <section className="bg-card border-b border-border py-12 sm:py-16">
         <div className="max-w-lg mx-auto px-4 text-center">
           <Badge className="mb-4 text-sm px-3 py-1" variant="default">
@@ -60,7 +60,7 @@ export default function Join() {
             </div>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-3">
-            Eggs at <span className="text-primary">₦15</span>
+            Eggs at <span className="text-primary">₦50</span>
           </h1>
           <p className="text-muted-foreground text-lg mb-2">
             We intercept healthy eggs before they spoil and move them fast through our physical network.

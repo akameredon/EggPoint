@@ -5,7 +5,7 @@ Synced with `docs/CAMPAIGN_ACTIVATION_PLAN.md` (founder notes 9 Aug 2026).
 | # | Product surface | Status | Location |
 |---|-----------------|--------|----------|
 | 1 | Referral / affiliate system | **Done (MVP)** | `lib/db/src/schema/referrals.ts`, `artifacts/api-server/src/routes/referrals.ts` |
-| 2 | ₦15 rescue pricing narrative | **Done** | `artifacts/eggpoint/src/pages/home.tsx` (hero section) |
+| 2 | ₦50 rescue pricing narrative | **Done** | `artifacts/eggpoint/src/pages/home.tsx` (hero section) |
 | 3 | Flyer / QR deep link `/join?ref=` | **Done** | `artifacts/eggpoint/src/pages/join.tsx`, routes `/join` + `/install` |
 | 4 | Campaign ops tracking | **Docs** | `docs/REUSABLE_KIT_INVENTORY.md` — lightweight sheet-style process; full internal tool later |
 | 5 | Investor / pledge tracker | **Schema ready** | `lib/db/src/schema/pledges.ts` — run `pnpm --filter @workspace/db run push` after merge |

@@ -6,15 +6,15 @@
 
 ## 1. Core Narrative (The Pitch)
 
-**We sell eggs at ₦15.**
+**We sell eggs at ₦50.**
 
 People will say it is impossible. Answer:
 
-> Research shows the volume of eggs that spoil and waste globally every day is larger than the volume humans actually consume. We focus on the waste stream. We intercept healthy eggs before they decay, move them fast through our physical neural network, and sell them at ₦15. Existing demand already eats its share. We capture the part that would have been lost.
+> Research shows the volume of eggs that spoil and waste globally every day is larger than the volume humans actually consume. We focus on the waste stream. We intercept healthy eggs before they decay, move them fast through our physical neural network, and sell them at ₦50. Existing demand already eats its share. We capture the part that would have been lost.
 
 Video script (use as-is or adapt):
 
-> I can sell this egg for you for 15 naira. I know you will say it's a lie, it's not possible. Let me tell you something. We did a research and we found out that the number of eggs that human beings consume globally on daily basis, it's small compared to the number of eggs that get spoiled... We focus on that waste. We grab it for you when it's still healthy and sell it to you very cheap at 15 naira per one... Go to our website. Tell us you need egg. This is your address. Deliver. Pay on delivery or online. Drop your questions in the comments. I will answer personally. If they overwhelm me I call my teams. Don't say it's impossible. I am the man of impossibility.
+> I can sell this egg for you for 50 naira. I know you will say it's a lie, it's not possible. Let me tell you something. We did a research and we found out that the number of eggs that human beings consume globally on daily basis, it's small compared to the number of eggs that get spoiled... We focus on that waste. We grab it for you when it's still healthy and sell it to you very cheap at 50 naira per one... Go to our website. Tell us you need egg. This is your address. Deliver. Pay on delivery or online. Drop your questions in the comments. I will answer personally. If they overwhelm me I call my teams. Don't say it's impossible. I am the man of impossibility.
 
 ---
 
@@ -55,7 +55,7 @@ Eggs are distributed and redistributed across locations and agents so that suppl
 ## 3. Flyer + QR Conversion Loop
 
 Flyer must contain:
-- Strong visual + ₦15 claim
+- Strong visual + ₦50 claim
 - QR code that lands on a dedicated install / signup page
 - Extremely simple steps to make money:
 
@@ -152,9 +152,9 @@ These campaign ideas require supporting product surfaces:
    - Track installs and first successful buyer sign-ups  
    - Simple payout or credit logic tied to the “make money by signing up a buyer” promise
 
-2. **₦15 Rescue pricing narrative**  
+2. **₦50 Rescue pricing narrative**  
    - Dedicated landing / section explaining waste interception  
-   - Clear “order eggs at ₦15” path (or closest viable wholesale equivalent) with transparency on source
+   - Clear “order eggs at ₦50” path (or closest viable wholesale equivalent) with transparency on source
 
 3. **Flyer / QR deep link**  
    - `/join?ref=XXXX` or `/install` page optimised for mobile + QR  
@@ -176,7 +176,7 @@ These campaign ideas require supporting product surfaces:
 | P0 | Obtain police/force approvals template for target LGAs | Ops |
 | P0 | Assemble Master Director + first 2 team coordinators | Founder |
 | P1 | Build minimal referral code + tracking | Eng |
-| P1 | Add ₦15 / waste-rescue section to public site | Eng |
+| P1 | Add ₦50 / waste-rescue section to public site | Eng |
 | P1 | Reusable kit inventory list + cost sheet | Ops |
 | P2 | Partner outreach list (noodle producers first) | BD |
 | P2 | Small-pledge capital conversation script | Founder |
