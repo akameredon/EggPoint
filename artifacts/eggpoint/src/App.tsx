@@ -16,6 +16,7 @@ import Sell from "@/pages/sell";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import GroupOrder from "@/pages/group-order";
+import Join from "@/pages/join";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,8 @@ function Router() {
       <main className="flex-1 flex flex-col">
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/join" component={Join} />
+          <Route path="/install" component={Join} />
           <Route path="/login" component={Login} />
           <Route path="/suppliers" component={Suppliers} />
           <Route path="/suppliers/:farmCode" component={SupplierProfile} />
