@@ -7,7 +7,6 @@ import {
   numeric,
   doublePrecision,
   pgEnum,
-  boolean,
 } from "drizzle-orm/pg-core";
 import { farmsTable } from "./farms";
 import { eggBatchesTable } from "./batches";
@@ -35,9 +34,6 @@ export const orderLocationSourceEnum = pgEnum("order_location_source", [
   "manual",
 ]);
 
-/**
- * Paid (or COD) egg orders. Powers launch: pay → geo-cluster → truck → dual confirm.
- */
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderCode: text("order_code").notNull().unique(),
@@ -70,12 +66,10 @@ export const ordersTable = pgTable("orders", {
   town: text("town"),
   streetAddress: text("street_address"),
 
-  /** Shared truck stop for the geo cluster */
   pickupPointLabel: text("pickup_point_label"),
   pickupWindow: text("pickup_window"),
   dispatchGroupKey: text("dispatch_group_key"),
 
-  /** Magic links — no app install for driver/buyer confirm */
   driverToken: text("driver_token").unique(),
   buyerToken: text("buyer_token").notNull().unique(),
 
@@ -83,6 +77,10 @@ export const ordersTable = pgTable("orders", {
   buyerConfirmedAt: timestamp("buyer_confirmed_at", { withTimezone: true }),
   driverNote: text("driver_note"),
   buyerNote: text("buyer_note"),
+
+  /** Street referral code from /join?ref= */
+  referralCode: text("referral_code"),
+  stockReserved: integer("stock_reserved").notNull().default(0),
 
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

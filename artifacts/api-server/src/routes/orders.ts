@@ -1,7 +1,14 @@
 import { Router, type IRouter } from "express";
 import { randomBytes } from "crypto";
-import { db, farmsTable, eggBatchesTable, ordersTable } from "@workspace/db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import {
+  db,
+  farmsTable,
+  eggBatchesTable,
+  ordersTable,
+  referralCodesTable,
+  referralEventsTable,
+} from "@workspace/db";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -52,11 +59,45 @@ function publicOrderView(o: typeof ordersTable.$inferSelect) {
     paidAt: o.paidAt,
     createdAt: o.createdAt,
     buyerToken: o.buyerToken,
-    // driverToken only returned to admin / driver endpoints
+    referralCode: o.referralCode,
   };
 }
 
-/** Create order + optional Flutterwave payment link */
+/** Reserve crates on batch; mark SOLD_OUT at zero */
+async function reserveStock(batchId: number, qty: number): Promise<boolean> {
+  const [batch] = await db
+    .select()
+    .from(eggBatchesTable)
+    .where(eq(eggBatchesTable.id, batchId));
+  if (!batch || batch.status !== "ACTIVE" || batch.quantityCrates < qty) return false;
+
+  const left = batch.quantityCrates - qty;
+  await db
+    .update(eggBatchesTable)
+    .set({
+      quantityCrates: left,
+      status: left <= 0 ? "SOLD_OUT" : "ACTIVE",
+    })
+    .where(eq(eggBatchesTable.id, batchId));
+  return true;
+}
+
+async function trackFirstOrderReferral(referralCode: string | null, orderCode: string) {
+  if (!referralCode) return;
+  const code = referralCode.toUpperCase().trim();
+  if (!code) return;
+  const [row] = await db
+    .select()
+    .from(referralCodesTable)
+    .where(and(eq(referralCodesTable.code, code), eq(referralCodesTable.active, true)));
+  if (!row) return;
+  await db.insert(referralEventsTable).values({
+    codeId: row.id,
+    eventType: "FIRST_ORDER",
+    meta: JSON.stringify({ orderCode }),
+  });
+}
+
 router.post("/orders", async (req, res): Promise<void> => {
   const {
     batchCode,
@@ -74,6 +115,7 @@ router.post("/orders", async (req, res): Promise<void> => {
     town,
     streetAddress,
     notes,
+    referralCode,
   } = req.body as Record<string, string | number | null | undefined>;
 
   if (!batchCode || !buyerName || !buyerPhone || !quantityCrates) {
@@ -103,9 +145,7 @@ router.post("/orders", async (req, res): Promise<void> => {
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng);
 
   if (!hasCoords) {
-    res.status(400).json({
-      error: "GPS or map pin required (latitude + longitude)",
-    });
+    res.status(400).json({ error: "GPS or map pin required (latitude + longitude)" });
     return;
   }
 
@@ -138,41 +178,56 @@ router.post("/orders", async (req, res): Promise<void> => {
   const buyerTok = token();
   const driverTok = token();
   const groupKey = `geo||${geoCellKey(lat!, lng!)}||${farm.farmCode}||${batch.batchCode}`;
-
   const source =
     locationSource === "gps" || locationSource === "map" || locationSource === "manual"
       ? locationSource
       : "gps";
+  const ref =
+    referralCode && String(referralCode).trim()
+      ? String(referralCode).toUpperCase().trim()
+      : null;
+
+  const baseValues = {
+    orderCode: code,
+    batchId: batch.id,
+    farmId: farm.id,
+    batchCode: batch.batchCode,
+    farmCode: farm.farmCode,
+    buyerName: String(buyerName),
+    buyerPhone: String(buyerPhone),
+    buyerEmail: buyerEmail ? String(buyerEmail) : null,
+    quantityCrates: qty,
+    unitPriceNgn: String(unit),
+    totalNgn: String(total),
+    latitude: lat,
+    longitude: lng,
+    locationSource: source as "gps" | "map" | "manual",
+    locationLabel: locationLabel ? String(locationLabel) : null,
+    state: state ? String(state) : null,
+    lga: lga ? String(lga) : null,
+    town: town ? String(town) : null,
+    streetAddress: streetAddress ? String(streetAddress) : null,
+    dispatchGroupKey: groupKey,
+    driverToken: driverTok,
+    buyerToken: buyerTok,
+    referralCode: ref,
+    notes: notes ? String(notes) : null,
+  };
 
   if (method === "COD") {
+    const ok = await reserveStock(batch.id, qty);
+    if (!ok) {
+      res.status(400).json({ error: "Not enough stock" });
+      return;
+    }
+
     const [order] = await db
       .insert(ordersTable)
       .values({
-        orderCode: code,
-        batchId: batch.id,
-        farmId: farm.id,
-        batchCode: batch.batchCode,
-        farmCode: farm.farmCode,
-        buyerName: String(buyerName),
-        buyerPhone: String(buyerPhone),
-        buyerEmail: buyerEmail ? String(buyerEmail) : null,
-        quantityCrates: qty,
-        unitPriceNgn: String(unit),
-        totalNgn: String(total),
+        ...baseValues,
         payMethod: "COD",
         status: "COD",
-        latitude: lat,
-        longitude: lng,
-        locationSource: source,
-        locationLabel: locationLabel ? String(locationLabel) : null,
-        state: state ? String(state) : null,
-        lga: lga ? String(lga) : null,
-        town: town ? String(town) : null,
-        streetAddress: streetAddress ? String(streetAddress) : null,
-        dispatchGroupKey: groupKey,
-        driverToken: driverTok,
-        buyerToken: buyerTok,
-        notes: notes ? String(notes) : null,
+        stockReserved: qty,
       })
       .returning();
 
@@ -184,7 +239,6 @@ router.post("/orders", async (req, res): Promise<void> => {
     return;
   }
 
-  // ONLINE
   if (!FLW_SECRET_KEY) {
     res.status(503).json({
       error: "Online payments not configured. Set FLW_SECRET_KEY or use payMethod COD.",
@@ -197,32 +251,11 @@ router.post("/orders", async (req, res): Promise<void> => {
   const [order] = await db
     .insert(ordersTable)
     .values({
-      orderCode: code,
-      batchId: batch.id,
-      farmId: farm.id,
-      batchCode: batch.batchCode,
-      farmCode: farm.farmCode,
-      buyerName: String(buyerName),
-      buyerPhone: String(buyerPhone),
-      buyerEmail: buyerEmail ? String(buyerEmail) : null,
-      quantityCrates: qty,
-      unitPriceNgn: String(unit),
-      totalNgn: String(total),
+      ...baseValues,
       payMethod: "ONLINE",
       status: "PENDING_PAYMENT",
       flwTxRef: txRef,
-      latitude: lat,
-      longitude: lng,
-      locationSource: source,
-      locationLabel: locationLabel ? String(locationLabel) : null,
-      state: state ? String(state) : null,
-      lga: lga ? String(lga) : null,
-      town: town ? String(town) : null,
-      streetAddress: streetAddress ? String(streetAddress) : null,
-      dispatchGroupKey: groupKey,
-      driverToken: driverTok,
-      buyerToken: buyerTok,
-      notes: notes ? String(notes) : null,
+      stockReserved: 0,
     })
     .returning();
 
@@ -264,7 +297,6 @@ router.post("/orders", async (req, res): Promise<void> => {
   };
 
   if (flwData.status !== "success" || !flwData.data?.link) {
-    req.log?.error?.({ flwData }, "Flutterwave egg order init failed");
     await db
       .update(ordersTable)
       .set({ status: "CANCELLED", updatedAt: new Date() })
@@ -282,7 +314,6 @@ router.post("/orders", async (req, res): Promise<void> => {
   });
 });
 
-/** Verify Flutterwave payment after redirect */
 router.post("/orders/verify-payment", async (req, res): Promise<void> => {
   const { transactionId, txRef, buyerToken } = req.body as {
     transactionId?: string;
@@ -346,12 +377,21 @@ router.post("/orders/verify-payment", async (req, res): Promise<void> => {
   }
 
   if (order.status === "PENDING_PAYMENT") {
+    const ok = await reserveStock(order.batchId, order.quantityCrates);
+    if (!ok) {
+      res.status(409).json({
+        error: "Payment ok but stock gone — contact support for refund",
+      });
+      return;
+    }
+
     await db
       .update(ordersTable)
       .set({
         status: "PAID",
         flwTxId: String(transactionId),
         paidAt: new Date(),
+        stockReserved: order.quantityCrates,
         updatedAt: new Date(),
       })
       .where(eq(ordersTable.id, order.id));
@@ -361,7 +401,6 @@ router.post("/orders/verify-payment", async (req, res): Promise<void> => {
   res.json({ success: true, order: publicOrderView(updated) });
 });
 
-/** Buyer track + confirm by magic link */
 router.get("/orders/by-token/:buyerToken", async (req, res): Promise<void> => {
   const [order] = await db
     .select()
@@ -404,34 +443,32 @@ router.post("/orders/by-token/:buyerToken/confirm-pickup", async (req, res): Pro
     return;
   }
 
-  if (!order.driverConfirmedAt && order.status !== "AWAITING_PICKUP" && order.status !== "DISPATCHED") {
-    // Allow buyer confirm only after dispatch started
-    if (!["DISPATCHED", "AWAITING_PICKUP", "GROUPED", "PAID", "COD"].includes(order.status)) {
-      res.status(400).json({ error: "Pickup not open yet" });
-      return;
-    }
+  if (!["DISPATCHED", "AWAITING_PICKUP", "GROUPED", "PAID", "COD"].includes(order.status)) {
+    res.status(400).json({ error: "Pickup not open yet" });
+    return;
   }
 
   const buyerConfirmedAt = order.buyerConfirmedAt || new Date();
-  const both = Boolean(order.driverConfirmedAt) && true;
-
-  const nextStatus =
-    order.driverConfirmedAt || both
-      ? ("COMPLETED" as const)
-      : order.status === "DISPATCHED"
-        ? ("AWAITING_PICKUP" as const)
-        : order.status;
+  const becameComplete = Boolean(order.driverConfirmedAt);
 
   const [updated] = await db
     .update(ordersTable)
     .set({
       buyerConfirmedAt,
       buyerNote: note ? String(note) : order.buyerNote,
-      status: order.driverConfirmedAt ? "COMPLETED" : nextStatus,
+      status: becameComplete
+        ? "COMPLETED"
+        : order.status === "DISPATCHED"
+          ? "AWAITING_PICKUP"
+          : order.status,
       updatedAt: new Date(),
     })
     .where(eq(ordersTable.id, order.id))
     .returning();
+
+  if (becameComplete && order.status !== "COMPLETED") {
+    await trackFirstOrderReferral(order.referralCode, order.orderCode);
+  }
 
   res.json({
     order: publicOrderView(updated),
@@ -439,7 +476,6 @@ router.post("/orders/by-token/:buyerToken/confirm-pickup", async (req, res): Pro
   });
 });
 
-/** Driver magic link */
 router.get("/orders/driver/:driverToken", async (req, res): Promise<void> => {
   const [order] = await db
     .select()
@@ -505,6 +541,10 @@ router.post("/orders/driver/:driverToken/confirm-handover", async (req, res): Pr
     .where(eq(ordersTable.id, order.id))
     .returning();
 
+  if (complete && order.status !== "COMPLETED") {
+    await trackFirstOrderReferral(order.referralCode, order.orderCode);
+  }
+
   res.json({
     ok: true,
     dualComplete: Boolean(updated.driverConfirmedAt && updated.buyerConfirmedAt),
@@ -512,7 +552,6 @@ router.post("/orders/driver/:driverToken/confirm-handover", async (req, res): Pr
   });
 });
 
-/** Admin: list paid/COD orders + group by dispatch key */
 router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db
     .select({
@@ -566,7 +605,7 @@ router.get("/admin/order-groups", requireAdmin, async (_req, res): Promise<void>
       centerLat: number | null;
       centerLng: number | null;
       orders: ReturnType<typeof publicOrderView>[];
-      driverLinks: string[];
+      driverLinks: { orderCode: string; url: string; buyerName: string }[];
     }
   >();
 
@@ -589,14 +628,17 @@ router.get("/admin/order-groups", requireAdmin, async (_req, res): Promise<void>
     g.orderCount += 1;
     g.orders.push(publicOrderView(o));
     if (o.driverToken) {
-      g.driverLinks.push(`${getAppBase()}/driver/${o.driverToken}`);
+      g.driverLinks.push({
+        orderCode: o.orderCode,
+        buyerName: o.buyerName,
+        url: `${getAppBase()}/driver/${o.driverToken}`,
+      });
     }
   }
 
   res.json(Array.from(map.values()));
 });
 
-/** Mark group dispatched + set shared pickup label/window */
 router.post("/admin/order-groups/dispatch", requireAdmin, async (req, res): Promise<void> => {
   const { groupKey, pickupPointLabel, pickupWindow } = req.body as {
     groupKey?: string;
