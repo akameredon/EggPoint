@@ -4,10 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-// Components
 import { Navbar } from "@/components/layout/navbar";
 
-// Pages
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Suppliers from "@/pages/suppliers/index";
@@ -17,6 +15,8 @@ import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import GroupOrder from "@/pages/group-order";
 import Join from "@/pages/join";
+import OrderTrack from "@/pages/order-track";
+import DriverPage from "@/pages/driver";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +36,8 @@ function Router() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/admin" component={Admin} />
           <Route path="/group-order/:batchCode" component={GroupOrder} />
+          <Route path="/order/:buyerToken" component={OrderTrack} />
+          <Route path="/driver/:driverToken" component={DriverPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
