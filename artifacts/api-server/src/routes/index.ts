@@ -11,6 +11,7 @@ import reviewsRouter from "./reviews";
 import paymentsRouter from "./payments";
 import deliveryRouter from "./delivery";
 import referralsRouter from "./referrals";
+import ordersRouter from "./orders";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(reviewsRouter);
 router.use(paymentsRouter);
 router.use(deliveryRouter);
 router.use(referralsRouter);
+router.use(ordersRouter);
 
 export default router;
