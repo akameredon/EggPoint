@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useLocation, Redirect } from "wouter";
 import {
   useGetMe,
@@ -10,14 +11,15 @@ import {
   useUpdateDeliveryStatus,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Check, X, Truck, MapPin, Phone, Package } from "lucide-react";
+import { Loader2, LogOut, Check, X, Truck, MapPin, Phone, Package, Copy, ExternalLink } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatCurrency } from "@/lib/format";
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -25,9 +27,33 @@ const STATUS_COLORS: Record<string, string> = {
   DISPATCHED: "bg-purple-100 text-purple-800 border-purple-300",
   DELIVERED: "bg-green-100 text-green-800 border-green-300",
   CANCELLED: "bg-red-100 text-red-800 border-red-300",
+  PAID: "bg-green-100 text-green-800 border-green-300",
+  COD: "bg-amber-100 text-amber-800 border-amber-300",
+  AWAITING_PICKUP: "bg-purple-100 text-purple-800 border-purple-300",
+  COMPLETED: "bg-green-100 text-green-800 border-green-300",
 };
 
 const DELIVERY_STATUSES = ["PENDING", "CONFIRMED", "DISPATCHED", "DELIVERED", "CANCELLED"];
+
+type OrderGroup = {
+  groupKey: string;
+  totalCrates: number;
+  orderCount: number;
+  label: string;
+  centerLat: number | null;
+  centerLng: number | null;
+  orders: {
+    orderCode: string;
+    buyerName: string;
+    buyerPhone: string;
+    quantityCrates: number;
+    status: string;
+    totalNgn: number;
+    payMethod: string;
+    locationLabel: string | null;
+  }[];
+  driverLinks: { orderCode: string; url: string; buyerName: string }[];
+};
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -35,22 +61,50 @@ export default function Admin() {
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading } = useGetMe({
-    query: { retry: false, queryKey: ["/api/auth/me"] }
+    query: { retry: false, queryKey: ["/api/auth/me"] },
   });
 
   const { data: pendingFarms, isLoading: farmsLoading } = useListPendingFarms({
-    query: { enabled: user?.role === "ADMIN", queryKey: getListPendingFarmsQueryKey() }
+    query: { enabled: user?.role === "ADMIN", queryKey: getListPendingFarmsQueryKey() },
   });
 
   const { data: deliveryGroups, isLoading: groupsLoading } = useListDeliveryGroups({
-    query: { enabled: user?.role === "ADMIN", queryKey: getListDeliveryGroupsQueryKey() }
+    query: { enabled: user?.role === "ADMIN", queryKey: getListDeliveryGroupsQueryKey() },
   });
+
+  const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [dispatching, setDispatching] = useState<string | null>(null);
+  const [pickupLabel, setPickupLabel] = useState<Record<string, string>>({});
+  const [pickupWindow, setPickupWindow] = useState<Record<string, string>>({});
+
+  async function loadOrderGroups() {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch("/api/admin/order-groups", { credentials: "include" });
+      if (!res.ok) throw new Error("failed");
+      setOrderGroups(await res.json());
+    } catch {
+      setOrderGroups([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (user?.role === "ADMIN") void loadOrderGroups();
+  }, [user?.role]);
 
   const logout = useLogout();
   const verifyFarm = useVerifyFarm();
   const updateStatus = useUpdateDeliveryStatus();
 
-  if (userLoading) return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (userLoading)
+    return (
+      <div className="p-12 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
 
   if (!user || user.role !== "ADMIN") {
     return <Redirect to="/login" />;
@@ -61,7 +115,7 @@ export default function Admin() {
       onSuccess: () => {
         queryClient.setQueryData(["/api/auth/me"], null);
         setLocation("/");
-      }
+      },
     });
   }
 
@@ -72,24 +126,70 @@ export default function Admin() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListPendingFarmsQueryKey() });
           toast({ title: verified ? "Farm approved" : "Farm rejected" });
-        }
+        },
       }
     );
   }
 
   function handleStatusChange(id: number, status: string) {
     updateStatus.mutate(
-      { id, data: { status: status as "PENDING" | "CONFIRMED" | "DISPATCHED" | "DELIVERED" | "CANCELLED" } },
+      {
+        id,
+        data: {
+          status: status as "PENDING" | "CONFIRMED" | "DISPATCHED" | "DELIVERED" | "CANCELLED",
+        },
+      },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListDeliveryGroupsQueryKey() });
           toast({ title: `Request updated to ${status}` });
         },
         onError: () => {
-          toast({ variant: "destructive", title: "Update failed", description: "Could not update the delivery status." });
-        }
+          toast({
+            variant: "destructive",
+            title: "Update failed",
+            description: "Could not update the delivery status.",
+          });
+        },
       }
     );
+  }
+
+  async function dispatchGroup(groupKey: string) {
+    setDispatching(groupKey);
+    try {
+      const res = await fetch("/api/admin/order-groups/dispatch", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupKey,
+          pickupPointLabel: pickupLabel[groupKey] || undefined,
+          pickupWindow: pickupWindow[groupKey] || undefined,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Dispatch failed");
+      toast({ title: `Dispatched ${body.updated} order(s)` });
+      await loadOrderGroups();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Dispatch failed",
+        description: e instanceof Error ? e.message : "Try again",
+      });
+    } finally {
+      setDispatching(null);
+    }
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied" });
+    } catch {
+      window.prompt("Copy:", text);
+    }
   }
 
   const totalDeliveryRequests = deliveryGroups?.reduce((sum, g) => sum + g.requests.length, 0) ?? 0;
@@ -100,15 +200,25 @@ export default function Admin() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Admin Operations</h1>
-          <p className="text-muted-foreground">Manage platform access, farm verifications, and nearby delivery clusters</p>
+          <p className="text-muted-foreground">
+            Farms · interest clusters · paid order truck groups
+          </p>
         </div>
         <Button variant="outline" onClick={handleLogout}>
           <LogOut className="w-4 h-4 mr-2" /> Logout
         </Button>
       </div>
 
-      <Tabs defaultValue="verifications">
-        <TabsList className="mb-6">
+      <Tabs defaultValue="orders">
+        <TabsList className="mb-6 flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="orders">
+            <Truck className="w-4 h-4 mr-2" /> Paid / COD orders
+            {orderGroups.length > 0 && (
+              <Badge className="ml-2 bg-primary text-primary-foreground text-xs px-1.5 py-0">
+                {orderGroups.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="verifications">
             Farm Verifications
             {(pendingFarms?.length ?? 0) > 0 && (
@@ -118,7 +228,7 @@ export default function Admin() {
             )}
           </TabsTrigger>
           <TabsTrigger value="logistics">
-            <Truck className="w-4 h-4 mr-2" /> Nearby Deliveries
+            Interest requests
             {totalDeliveryRequests > 0 && (
               <Badge className="ml-2 bg-primary text-primary-foreground text-xs px-1.5 py-0">
                 {totalDeliveryRequests}
@@ -127,7 +237,144 @@ export default function Admin() {
           </TabsTrigger>
         </TabsList>
 
-        {/* --- Farm Verifications Tab --- */}
+        {/* Paid order geo groups — main launch ops */}
+        <TabsContent value="orders">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-muted-foreground">
+              GPS clusters ready for one truck. Set pickup point → Dispatch → copy driver links.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void loadOrderGroups()}>
+              Refresh
+            </Button>
+          </div>
+
+          {ordersLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : orderGroups.length === 0 ? (
+            <div className="text-center py-20 bg-card rounded-lg border">
+              <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No active paid / COD orders</h3>
+              <p className="text-muted-foreground mt-1 text-sm">
+                When buyers checkout with a pin, geo groups show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orderGroups.map((g) => (
+                <Card key={g.groupKey}>
+                  <CardHeader className="pb-3 bg-muted/30">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-primary" />
+                          {g.label}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {g.orderCount} order(s) · {g.totalCrates} crates
+                          {g.centerLat != null && g.centerLng != null
+                            ? ` · ${g.centerLat.toFixed(4)}, ${g.centerLng.toFixed(4)}`
+                            : ""}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                      {g.orders.map((o) => (
+                        <div
+                          key={o.orderCode}
+                          className="flex flex-wrap items-center justify-between gap-2 border rounded-lg p-3 text-sm"
+                        >
+                          <div>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {o.orderCode}
+                            </span>
+                            <div className="font-semibold">
+                              {o.buyerName} · {o.buyerPhone}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {o.quantityCrates} crates · {formatCurrency(o.totalNgn)} ·{" "}
+                              {o.payMethod}
+                            </div>
+                          </div>
+                          <Badge className={`border ${STATUS_COLORS[o.status] || ""}`}>
+                            {o.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Pickup point (e.g. Wetheral junction bus stop)"
+                        value={pickupLabel[g.groupKey] || ""}
+                        onChange={(e) =>
+                          setPickupLabel((s) => ({ ...s, [g.groupKey]: e.target.value }))
+                        }
+                      />
+                      <Input
+                        placeholder="Window (e.g. Sat 2–4pm)"
+                        value={pickupWindow[g.groupKey] || ""}
+                        onChange={(e) =>
+                          setPickupWindow((s) => ({ ...s, [g.groupKey]: e.target.value }))
+                        }
+                      />
+                    </div>
+
+                    <Button
+                      onClick={() => void dispatchGroup(g.groupKey)}
+                      disabled={dispatching === g.groupKey}
+                    >
+                      {dispatching === g.groupKey ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Dispatching…
+                        </>
+                      ) : (
+                        <>
+                          <Truck className="w-4 h-4 mr-2" /> Dispatch this group
+                        </>
+                      )}
+                    </Button>
+
+                    {g.driverLinks.length > 0 && (
+                      <div className="border-t pt-3 space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase">
+                          Driver links (send on WhatsApp)
+                        </p>
+                        {g.driverLinks.map((d) => (
+                          <div
+                            key={d.orderCode}
+                            className="flex flex-wrap items-center gap-2 text-sm"
+                          >
+                            <span className="font-medium">{d.buyerName}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void copyText(d.url)}
+                            >
+                              <Copy className="w-3 h-3 mr-1" /> Copy
+                            </Button>
+                            <a
+                              href={d.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary text-xs inline-flex items-center gap-1"
+                            >
+                              Open <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="verifications">
           <Card>
             <CardHeader>
@@ -136,23 +383,33 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               {farmsLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                </div>
               ) : pendingFarms?.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">No pending farms to review.</div>
+                <div className="text-center py-12 text-muted-foreground">
+                  No pending farms to review.
+                </div>
               ) : (
                 <div className="space-y-4">
-                  {pendingFarms?.map(farm => (
-                    <div key={farm.id} className="flex flex-col md:flex-row justify-between md:items-center p-4 border rounded-lg gap-4 bg-card">
+                  {pendingFarms?.map((farm) => (
+                    <div
+                      key={farm.id}
+                      className="flex flex-col md:flex-row justify-between md:items-center p-4 border rounded-lg gap-4 bg-card"
+                    >
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-lg">{farm.farmName}</h3>
-                          <Badge variant="outline" className="font-mono text-xs">{farm.farmCode}</Badge>
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {farm.farmCode}
+                          </Badge>
                         </div>
                         <div className="text-sm text-muted-foreground mb-2">
                           {farm.lga}, {farm.state} &bull; Registered {formatDate(farm.createdAt)}
                         </div>
                         <div className="text-sm">
-                          <span className="font-medium">Owner:</span> {farm.ownerName} ({farm.ownerPhone})
+                          <span className="font-medium">Owner:</span> {farm.ownerName} (
+                          {farm.ownerPhone})
                         </div>
                         {farm.description && (
                           <p className="text-sm mt-2 p-2 bg-muted rounded">{farm.description}</p>
@@ -182,24 +439,26 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* --- Group Deliveries Tab --- */}
         <TabsContent value="logistics">
           {groupsLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
           ) : !deliveryGroups || deliveryGroups.length === 0 ? (
             <div className="text-center py-20 bg-card rounded-lg border">
               <Truck className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-foreground">No delivery requests yet</h3>
-              <p className="mt-1 text-muted-foreground">When buyers request coordinated delivery from the same area, the nearby delivery clusters will appear here.</p>
+              <h3 className="text-lg font-medium text-foreground">No interest requests</h3>
+              <p className="mt-1 text-muted-foreground text-sm">
+                Legacy delivery-request clusters (pre-checkout). Paid flow uses Paid / COD tab.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Summary bar */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[
                   { label: "Total Requests", value: totalDeliveryRequests },
                   { label: "Total Crates", value: totalCratesRequested },
-                  { label: "State Groups", value: deliveryGroups.length },
+                  { label: "Groups", value: deliveryGroups.length },
                 ].map(({ label, value }) => (
                   <Card key={label}>
                     <CardContent className="p-4 text-center">
@@ -210,120 +469,56 @@ export default function Admin() {
                 ))}
               </div>
 
-              {deliveryGroups.map(group => (
+              {deliveryGroups.map((group) => (
                 <Card key={group.groupKey} className="overflow-hidden">
                   <CardHeader className="pb-3 bg-muted/30">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <MapPin className="w-4 h-4 text-primary" />
-                          <span className="font-bold text-lg">{group.deliveryState}</span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="font-semibold">{group.farmName}</span>
-                          <Badge variant="secondary" className="font-mono text-xs">{group.farmCode}</Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Package className="w-3.5 h-3.5" />
-                            {group.eggSize} eggs &bull; {group.requests.length} buyer{group.requests.length !== 1 ? "s" : ""} &bull; {group.totalCrates} crates total
-                          </span>
-                          <span>Collection: {formatDate(group.collectionDate)}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                            Proximity zone: {group.proximityLabel}
-                          </span>
-                          <span>Farm location: {group.farmLga}, {group.farmState}</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <span className="font-bold text-lg">{group.deliveryState}</span>
+                      <span className="font-semibold">{group.farmName}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {group.eggSize} · {group.requests.length} buyers · {group.totalCrates} crates
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-4">
-                    <div className="space-y-3">
-                      {group.requests.map((req, idx) => (
-                        <div
-                          key={req.id}
-                          className="border rounded-lg p-4 bg-card"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="text-xs text-muted-foreground font-mono">#{idx + 1}</span>
-                                <span className="font-bold">{req.buyerName}</span>
-                                <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Phone className="w-3.5 h-3.5" /> {req.buyerPhone}
-                                </span>
-                                <Badge variant="secondary">{req.quantityCrates} crates</Badge>
-                                <Badge className={`text-xs border ${STATUS_COLORS[req.status]}`}>
-                                  {req.status}
-                                </Badge>
-                              </div>
-
-                              {/* Full address breakdown */}
-                              <div className="text-sm space-y-0.5">
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                                  <span className="text-muted-foreground">State:</span>
-                                  <span className="font-medium">{req.state}</span>
-                                  <span className="text-muted-foreground">LGA:</span>
-                                  <span className="font-medium">{req.lga}</span>
-                                  <span className="text-muted-foreground">Town:</span>
-                                  <span className="font-medium">{req.town}</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">Street: </span>
-                                  <span className="font-medium">{req.streetAddress}</span>
-                                </div>
-                                {req.marketArea && (
-                                  <div>
-                                    <span className="text-muted-foreground">Market/Area: </span>
-                                    <span className="font-medium">{req.marketArea}</span>
-                                  </div>
-                                )}
-                                {req.village && (
-                                  <div>
-                                    <span className="text-muted-foreground">Village: </span>
-                                    <span className="font-medium">{req.village}</span>
-                                  </div>
-                                )}
-                                {req.landmark && (
-                                  <div>
-                                    <span className="text-muted-foreground">Landmark: </span>
-                                    <span className="font-medium text-primary">{req.landmark}</span>
-                                  </div>
-                                )}
-                                {req.notes && (
-                                  <div className="mt-1 p-2 bg-muted rounded text-xs">
-                                    <span className="font-medium">Notes: </span>{req.notes}
-                                  </div>
-                                )}
-                              </div>
+                  <CardContent className="pt-4 space-y-3">
+                    {group.requests.map((req) => (
+                      <div key={req.id} className="border rounded-lg p-4">
+                        <div className="flex flex-col sm:flex-row justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold">{req.buyerName}</span>
+                              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Phone className="w-3.5 h-3.5" /> {req.buyerPhone}
+                              </span>
+                              <Badge variant="secondary">{req.quantityCrates} crates</Badge>
+                              <Badge className={`text-xs border ${STATUS_COLORS[req.status]}`}>
+                                {req.status}
+                              </Badge>
                             </div>
-
-                            {/* Status control */}
-                            <div className="shrink-0 w-full sm:w-44">
-                              <div className="text-xs text-muted-foreground mb-1">Update status</div>
-                              <Select
-                                value={req.status}
-                                onValueChange={(v) => handleStatusChange(req.id, v)}
-                                disabled={updateStatus.isPending}
-                              >
-                                <SelectTrigger className="text-xs h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {DELIVERY_STATUSES.map(s => (
-                                    <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Added {formatDate(req.createdAt)}
-                              </div>
-                            </div>
+                            <p className="text-sm mt-1">
+                              {req.streetAddress}, {req.town}, {req.lga}
+                            </p>
                           </div>
+                          <Select
+                            value={req.status}
+                            onValueChange={(v) => handleStatusChange(req.id, v)}
+                            disabled={updateStatus.isPending}
+                          >
+                            <SelectTrigger className="text-xs h-8 w-full sm:w-44">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DELIVERY_STATUSES.map((s) => (
+                                <SelectItem key={s} value={s} className="text-xs">
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
               ))}
