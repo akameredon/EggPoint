@@ -24,29 +24,69 @@ function extractStreetAnchor(streetAddress: string): string {
   return significant.slice(0, 3).join(" ");
 }
 
+/** Haversine distance in km */
+function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const lat1 = (aLat * Math.PI) / 180;
+  const lat2 = (bLat * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Grid cell ~400m so nearby shops cluster on the same truck stop */
+function geoCellKey(lat: number, lng: number, precision = 3): string {
+  return `${lat.toFixed(precision)}|${lng.toFixed(precision)}`;
+}
+
 function buildProximityGroup(values: {
-  state: string;
-  lga: string;
-  town: string;
+  state?: string | null;
+  lga?: string | null;
+  town?: string | null;
   marketArea?: string | null;
   village?: string | null;
-  streetAddress: string;
+  streetAddress?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationLabel?: string | null;
 }) {
+  if (
+    values.latitude != null &&
+    values.longitude != null &&
+    Number.isFinite(values.latitude) &&
+    Number.isFinite(values.longitude)
+  ) {
+    const cell = geoCellKey(values.latitude, values.longitude);
+    return {
+      proximityGroupKey: `geo||${cell}`,
+      proximityLabel:
+        values.locationLabel ||
+        `Pin ${values.latitude.toFixed(5)}, ${values.longitude.toFixed(5)}`,
+      hasCoords: true as const,
+    };
+  }
+
   const location = [values.town, values.marketArea || values.village].filter(Boolean).join(" • ");
-  const streetAnchor = extractStreetAnchor(values.streetAddress);
+  const streetAnchor = extractStreetAnchor(values.streetAddress || "");
   const proximityLabel = [location, streetAnchor].filter(Boolean).join(" • ");
   const proximityGroupKey = [
-    normalizeAddressToken(values.state),
-    normalizeAddressToken(values.lga),
-    normalizeAddressToken(values.town),
+    normalizeAddressToken(values.state ?? ""),
+    normalizeAddressToken(values.lga ?? ""),
+    normalizeAddressToken(values.town ?? ""),
     normalizeAddressToken(values.marketArea ?? ""),
     normalizeAddressToken(values.village ?? ""),
     streetAnchor,
-  ].filter(Boolean).join("||");
+  ]
+    .filter(Boolean)
+    .join("||");
 
   return {
-    proximityGroupKey,
+    proximityGroupKey: proximityGroupKey || "unknown",
     proximityLabel: proximityLabel || "Nearby delivery zone",
+    hasCoords: false as const,
   };
 }
 
@@ -64,10 +104,44 @@ router.post("/delivery-requests", async (req, res): Promise<void> => {
     landmark,
     quantityCrates,
     notes,
-  } = req.body as Record<string, string | number>;
+    latitude,
+    longitude,
+    locationSource,
+    locationLabel,
+  } = req.body as Record<string, string | number | null | undefined>;
 
-  if (!batchCode || !buyerName || !buyerPhone || !state || !lga || !town || !streetAddress || !quantityCrates) {
-    res.status(400).json({ error: "Missing required fields: batchCode, buyerName, buyerPhone, state, lga, town, streetAddress, quantityCrates" });
+  if (!batchCode || !buyerName || !buyerPhone || !quantityCrates) {
+    res.status(400).json({
+      error: "Missing required fields: batchCode, buyerName, buyerPhone, quantityCrates",
+    });
+    return;
+  }
+
+  const lat =
+    latitude === null || latitude === undefined || latitude === ""
+      ? null
+      : Number(latitude);
+  const lng =
+    longitude === null || longitude === undefined || longitude === ""
+      ? null
+      : Number(longitude);
+
+  const hasCoords =
+    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng);
+
+  // Need either GPS/map pin OR classic address fields
+  if (!hasCoords) {
+    if (!state || !lga || !town || !streetAddress) {
+      res.status(400).json({
+        error:
+          "Provide GPS coordinates (latitude + longitude) or full address (state, lga, town, streetAddress)",
+      });
+      return;
+    }
+  }
+
+  if (hasCoords && (Math.abs(lat!) > 90 || Math.abs(lng!) > 180)) {
+    res.status(400).json({ error: "Invalid coordinates" });
     return;
   }
 
@@ -86,23 +160,30 @@ router.post("/delivery-requests", async (req, res): Promise<void> => {
     return;
   }
 
-  const [farm] = await db
-    .select()
-    .from(farmsTable)
-    .where(eq(farmsTable.id, batch.farmId));
+  const [farm] = await db.select().from(farmsTable).where(eq(farmsTable.id, batch.farmId));
 
   if (!farm) {
     res.status(404).json({ error: "Farm not found" });
     return;
   }
 
+  const source =
+    locationSource === "gps" || locationSource === "map" || locationSource === "manual"
+      ? locationSource
+      : hasCoords
+        ? "gps"
+        : "manual";
+
   const proximity = buildProximityGroup({
-    state: String(state),
-    lga: String(lga),
-    town: String(town),
+    state: state ? String(state) : null,
+    lga: lga ? String(lga) : null,
+    town: town ? String(town) : null,
     marketArea: marketArea ? String(marketArea) : null,
     village: village ? String(village) : null,
-    streetAddress: String(streetAddress),
+    streetAddress: streetAddress ? String(streetAddress) : null,
+    latitude: hasCoords ? lat : null,
+    longitude: hasCoords ? lng : null,
+    locationLabel: locationLabel ? String(locationLabel) : null,
   });
 
   const [request] = await db
@@ -114,13 +195,17 @@ router.post("/delivery-requests", async (req, res): Promise<void> => {
       batchId: batch.id,
       buyerName: String(buyerName),
       buyerPhone: String(buyerPhone),
-      state: String(state),
-      lga: String(lga),
-      town: String(town),
-      streetAddress: String(streetAddress),
+      state: state ? String(state) : null,
+      lga: lga ? String(lga) : null,
+      town: town ? String(town) : null,
+      streetAddress: streetAddress ? String(streetAddress) : null,
       marketArea: marketArea ? String(marketArea) : null,
       village: village ? String(village) : null,
       landmark: landmark ? String(landmark) : null,
+      latitude: hasCoords ? lat : null,
+      longitude: hasCoords ? lng : null,
+      locationSource: source,
+      locationLabel: locationLabel ? String(locationLabel) : proximity.proximityLabel,
       quantityCrates: Number(quantityCrates),
       notes: notes ? String(notes) : null,
       status: "PENDING",
@@ -134,7 +219,7 @@ router.post("/delivery-requests", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<void> => {
+router.get("/admin/delivery-groups", requireAdmin, async (_req, res): Promise<void> => {
   const requests = await db
     .select({
       id: deliveryRequestsTable.id,
@@ -152,6 +237,10 @@ router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<voi
       marketArea: deliveryRequestsTable.marketArea,
       village: deliveryRequestsTable.village,
       landmark: deliveryRequestsTable.landmark,
+      latitude: deliveryRequestsTable.latitude,
+      longitude: deliveryRequestsTable.longitude,
+      locationSource: deliveryRequestsTable.locationSource,
+      locationLabel: deliveryRequestsTable.locationLabel,
       quantityCrates: deliveryRequestsTable.quantityCrates,
       status: deliveryRequestsTable.status,
       notes: deliveryRequestsTable.notes,
@@ -163,27 +252,29 @@ router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<voi
     .from(deliveryRequestsTable)
     .innerJoin(farmsTable, eq(farmsTable.id, deliveryRequestsTable.farmId))
     .innerJoin(eggBatchesTable, eq(eggBatchesTable.id, deliveryRequestsTable.batchId))
-    .orderBy(
-      deliveryRequestsTable.state,
-      deliveryRequestsTable.farmCode,
-      desc(deliveryRequestsTable.createdAt),
-    );
+    .orderBy(desc(deliveryRequestsTable.createdAt));
 
-  const groupMap = new Map<string, {
-    groupKey: string;
-    farmCode: string;
-    farmName: string;
-    farmState: string;
-    farmLga: string;
-    deliveryState: string;
-    batchCode: string;
-    eggSize: string;
-    pricePerCrate: number;
-    collectionDate: string;
-    totalCrates: number;
-    proximityLabel: string;
-    requests: typeof requests;
-  }>();
+  const groupMap = new Map<
+    string,
+    {
+      groupKey: string;
+      farmCode: string;
+      farmName: string;
+      farmState: string;
+      farmLga: string;
+      deliveryState: string | null;
+      batchCode: string;
+      eggSize: string;
+      pricePerCrate: number;
+      collectionDate: string;
+      totalCrates: number;
+      proximityLabel: string;
+      hasCoords: boolean;
+      centerLat: number | null;
+      centerLng: number | null;
+      requests: typeof requests;
+    }
+  >();
 
   for (const r of requests) {
     const proximity = buildProximityGroup({
@@ -193,6 +284,9 @@ router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<voi
       marketArea: r.marketArea,
       village: r.village,
       streetAddress: r.streetAddress,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      locationLabel: r.locationLabel,
     });
     const key = `${proximity.proximityGroupKey}||${r.farmCode}||${r.batchCode}`;
     if (!groupMap.has(key)) {
@@ -209,12 +303,23 @@ router.get("/admin/delivery-groups", requireAdmin, async (req, res): Promise<voi
         collectionDate: r.collectionDate,
         totalCrates: 0,
         proximityLabel: proximity.proximityLabel,
+        hasCoords: proximity.hasCoords,
+        centerLat: r.latitude,
+        centerLng: r.longitude,
         requests: [],
       });
     }
     const group = groupMap.get(key)!;
     group.totalCrates += r.quantityCrates;
     group.requests.push(r);
+    if (r.latitude != null && r.longitude != null) {
+      // Running average of pins in the cell
+      const n = group.requests.filter((x) => x.latitude != null).length;
+      group.centerLat =
+        group.centerLat == null ? r.latitude : (group.centerLat * (n - 1) + r.latitude) / n;
+      group.centerLng =
+        group.centerLng == null ? r.longitude : (group.centerLng * (n - 1) + r.longitude) / n;
+    }
   }
 
   res.json(Array.from(groupMap.values()));

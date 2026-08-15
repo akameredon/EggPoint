@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, doublePrecision } from "drizzle-orm/pg-core";
 import { farmsTable } from "./farms";
 import { eggBatchesTable } from "./batches";
 
@@ -10,6 +10,12 @@ export const deliveryStatusEnum = pgEnum("delivery_status", [
   "CANCELLED",
 ]);
 
+export const locationSourceEnum = pgEnum("location_source", [
+  "gps",
+  "map",
+  "manual",
+]);
+
 export const deliveryRequestsTable = pgTable("delivery_requests", {
   id: serial("id").primaryKey(),
   batchCode: text("batch_code").notNull(),
@@ -18,13 +24,20 @@ export const deliveryRequestsTable = pgTable("delivery_requests", {
   batchId: integer("batch_id").notNull().references(() => eggBatchesTable.id, { onDelete: "cascade" }),
   buyerName: text("buyer_name").notNull(),
   buyerPhone: text("buyer_phone").notNull(),
-  state: text("state").notNull(),
-  lga: text("lga").notNull(),
-  town: text("town").notNull(),
-  streetAddress: text("street_address").notNull(),
+  /** Optional text fields — filled automatically from reverse geocode when GPS/map is used */
+  state: text("state"),
+  lga: text("lga"),
+  town: text("town"),
+  streetAddress: text("street_address"),
   marketArea: text("market_area"),
   village: text("village"),
   landmark: text("landmark"),
+  /** Absolute pin — preferred for clustering trucks */
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  locationSource: locationSourceEnum("location_source").default("manual"),
+  /** Human-readable label from reverse geocode, e.g. "Douglas Rd, Owerri, Imo" */
+  locationLabel: text("location_label"),
   quantityCrates: integer("quantity_crates").notNull(),
   status: deliveryStatusEnum("status").notNull().default("PENDING"),
   notes: text("notes"),
